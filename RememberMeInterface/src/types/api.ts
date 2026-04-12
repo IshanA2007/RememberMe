@@ -63,6 +63,63 @@ export interface FaceEmbeddingRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Pending Faces (API_SPEC §3b)
+// ---------------------------------------------------------------------------
+
+/** Thumbnail MIME types accepted by /api/patients/{id}/pending-faces. */
+export type PendingFaceThumbnailMime = "image/jpeg" | "image/png";
+
+/** Vision → server: §3b.1 body. */
+export interface PendingFaceCreateRequest {
+  embedding: number[]; // length 512
+  thumbnail_b64: string;
+  thumbnail_mime: PendingFaceThumbnailMime;
+  captured_at: IsoUtc;
+}
+
+/** Server response for §3b.1 (new row, merged row, or already_known). */
+export interface PendingFaceObject {
+  pending_face_id: Id | null;
+  patient_id: Id;
+  thumbnail_b64: string;
+  thumbnail_mime: PendingFaceThumbnailMime;
+  captured_at: IsoUtc;
+  created_at: IsoUtc;
+  updated_at: IsoUtc;
+  merged: boolean;
+  already_known: boolean;
+  face_id?: Id | null;
+}
+
+/** Server → client list row (no embedding) for §3b.2. */
+export interface PendingFaceListItem {
+  pending_face_id: Id;
+  patient_id: Id;
+  thumbnail_b64: string;
+  thumbnail_mime: PendingFaceThumbnailMime;
+  captured_at: IsoUtc;
+  created_at: IsoUtc;
+  updated_at: IsoUtc;
+}
+
+/** Container for §3b.2. */
+export interface PendingFaceListResponse {
+  pending_faces: PendingFaceListItem[];
+}
+
+/** Dashboard → server: §3b.3 accept body. */
+export interface PendingFaceAcceptRequest {
+  name: string;
+  title?: string | null;
+  description?: string | null;
+}
+
+/** Server → client for §3b.3. */
+export interface PendingFaceAcceptResponse {
+  face: FaceObject;
+}
+
+// ---------------------------------------------------------------------------
 // Memories (API_SPEC §4)
 // ---------------------------------------------------------------------------
 

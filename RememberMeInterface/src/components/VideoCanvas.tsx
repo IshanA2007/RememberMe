@@ -10,8 +10,9 @@
 //        2px --accent       when the App has a current match for the frame_id
 //        2px --signal-warm  when there is no match yet (unknown)
 //   - An imperative handle (forwardRef) exposing:
-//        pickFocusFace()     → the frame_id of the largest "stale" face
-//        cropFaceBase64(id)  → a padded 160x160 JPEG base64 for WS recognize
+//        pickFocusFace()              → the frame_id of the largest "stale" face
+//        cropFaceBase64(id)           → a padded 160x160 JPEG base64 for WS recognize
+//        cropFaceThumbnailBase64(id)  → a 96x96 JPEG base64 for pending-faces
 //
 // The component does NOT own the WebSocket — the parent App orchestrates
 // throttling and sending per PIPELINE §1.2 step 15-20.
@@ -64,6 +65,16 @@ export interface VideoCanvasHandle {
     b64: string;
     mime: "image/jpeg";
     bbox: BBox;
+  } | null;
+  /**
+   * Crop a small thumbnail for the pending-faces queue (API_SPEC §3b.1).
+   * Bbox is padded by 15 %, resized to 96x96 JPEG at quality 70 — ~3–5 KB
+   * decoded, well under the 50 KB server cap. Returns the raw base64 (no
+   * data-URL prefix) plus the MIME.
+   */
+  cropFaceThumbnailBase64(frameId: string): {
+    b64: string;
+    mime: "image/jpeg";
   } | null;
 }
 
@@ -356,6 +367,43 @@ export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
               h: Math.round(t.bbox.h),
             },
           };
+        },
+
+        cropFaceThumbnailBase64(frameId: string): {
+          b64: string;
+          mime: "image/jpeg";
+        } | null {
+          const snap = lastFrameRef.current;
+          const video = videoRef.current;
+          if (snap === null || video === null) return null;
+          const t = snap.tracked.find((d) => d.frame_id === frameId);
+          if (t === undefined) return null;
+
+          const vw = snap.intrinsic.w;
+          const vh = snap.intrinsic.h;
+          if (vw === 0 || vh === 0) return null;
+
+          // 15 % padding around the bbox — slightly tighter than the
+          // recognition crop so the Dashboard preview focuses on the face.
+          const padX = t.bbox.w * 0.15;
+          const padY = t.bbox.h * 0.15;
+          const sx = Math.max(0, Math.floor(t.bbox.x - padX));
+          const sy = Math.max(0, Math.floor(t.bbox.y - padY));
+          const sw = Math.min(vw - sx, Math.ceil(t.bbox.w + 2 * padX));
+          const sh = Math.min(vh - sy, Math.ceil(t.bbox.h + 2 * padY));
+          if (sw <= 0 || sh <= 0) return null;
+
+          const off = document.createElement("canvas");
+          off.width = 96;
+          off.height = 96;
+          const ctx = off.getContext("2d");
+          if (ctx === null) return null;
+          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 96, 96);
+          const dataUrl = off.toDataURL("image/jpeg", 0.7);
+          const commaIdx = dataUrl.indexOf(",");
+          if (commaIdx < 0) return null;
+          const b64 = dataUrl.slice(commaIdx + 1);
+          return { b64, mime: "image/jpeg" };
         },
       }),
       [],

@@ -17,6 +17,8 @@ import type {
   FaceEmbeddingRequest,
   FaceObject,
   Id,
+  PendingFaceCreateRequest,
+  PendingFaceObject,
   ReminderObject,
   SttResponse,
 } from "../types/api";
@@ -183,4 +185,22 @@ export async function postFaceEmbedding(
     { method: "POST", body },
   );
   return handleJson<FaceObject>(res);
+}
+
+/**
+ * POST /api/patients/{patient_id}/pending-faces (API_SPEC §3b.1). Vision
+ * submits an unknown face's embedding + thumbnail to the caretaker-facing
+ * pending queue. The server may respond with a newly-inserted row, a merged
+ * row (dedupe against an existing pending face), or `already_known: true` if
+ * the embedding actually matches a registered face.
+ */
+export async function submitPendingFace(
+  patientId: Id,
+  body: PendingFaceCreateRequest,
+): Promise<PendingFaceObject> {
+  const res = await request(
+    `/api/patients/${encodeURIComponent(patientId)}/pending-faces`,
+    { method: "POST", body },
+  );
+  return handleJson<PendingFaceObject>(res);
 }

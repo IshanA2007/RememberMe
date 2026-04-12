@@ -34,7 +34,7 @@ import VideoCanvas, {
 import * as audioPlayer from "./services/audio_player";
 import * as conversationCapture from "./services/conversation_capture";
 import * as reminderPoller from "./services/reminder_poller";
-import { tts } from "./services/rest_client";
+import { submitPendingFace, tts } from "./services/rest_client";
 import { getPatientId, hasSession } from "./services/session";
 import * as voiceTrigger from "./services/voice_trigger";
 import { RECOGNIZE_THROTTLE_MS, WsClient } from "./services/ws_client";
@@ -78,6 +78,8 @@ interface ErrorInfo {
 const MATCH_LIFETIME_MS = 3_000;
 /** Recent-match window for conversation_capture (PIPELINE §2.1 step 5). */
 const RECENT_MATCH_WINDOW_MS = 10_000;
+/** Pending-face POST throttle per-frame_id — PIPELINE §1.6 step 43. */
+const PENDING_FACE_THROTTLE_MS = 10_000;
 
 export function App(): JSX.Element {
   const [appState, setAppState] = useState<AppState>("booting");
@@ -105,6 +107,8 @@ export function App(): JSX.Element {
   const lastMatchReceivedAtByFrameIdRef = useRef<Map<string, number>>(
     new Map(),
   );
+  /** frame_id → last time we POSTed to /pending-faces (PIPELINE §1.6 step 43). */
+  const lastPendingSubmitByFrameIdRef = useRef<Map<string, number>>(new Map());
   const videoCanvasRef = useRef<VideoCanvasHandle | null>(null);
   const wsRef = useRef<WsClient | null>(null);
   const msgCounterRef = useRef<number>(0);
@@ -148,9 +152,52 @@ export function App(): JSX.Element {
           embedding: msg.embedding,
           lastSeen: now,
         });
-        // TODO(unknown-registration): when `face_count` is 1 and that face
-        // has `has_embedding=false`, POST this embedding to
-        // /api/faces/{face_id}/embedding per PIPELINE §1.6 simplification.
+
+        // Surface the unknown face to the caretaker-facing pending queue
+        // (PIPELINE §1.6 steps 42–46). We throttle per-frame_id to avoid
+        // spamming the queue while the same face stays in frame.
+        if (msg.embedding.length === 512) {
+          const patientId = getPatientId();
+          if (patientId !== null) {
+            const lastSubmitMs =
+              lastPendingSubmitByFrameIdRef.current.get(msg.frame_id) ?? 0;
+            if (now - lastSubmitMs >= PENDING_FACE_THROTTLE_MS) {
+              const handle = videoCanvasRef.current;
+              const thumb = handle?.cropFaceThumbnailBase64(msg.frame_id) ?? null;
+              if (thumb !== null) {
+                lastPendingSubmitByFrameIdRef.current.set(msg.frame_id, now);
+                const capturedAt = new Date()
+                  .toISOString()
+                  .replace(/\.\d{3}Z$/, "Z");
+                const frameId = msg.frame_id;
+                void submitPendingFace(patientId, {
+                  embedding: msg.embedding,
+                  thumbnail_b64: thumb.b64,
+                  thumbnail_mime: thumb.mime,
+                  captured_at: capturedAt,
+                })
+                  .then((resp) => {
+                    // If the server matched a registered face, drop the
+                    // local UnknownBadge; the next recognize tick will bring
+                    // back a `matched=true` for this face once the cache
+                    // refresh picks it up.
+                    if (resp.already_known) {
+                      pendingByFrameIdRef.current.delete(frameId);
+                      bumpRender();
+                    }
+                    // merged / newly-inserted: leave the local pending
+                    // state — caretaker will accept or dismiss in the
+                    // Dashboard.
+                  })
+                  .catch((err: unknown) => {
+                    // Transient failure: allow the 10 s throttle to
+                    // naturally debounce retries on the next matched=false.
+                    console.warn("pending face submit failed:", err);
+                  });
+              }
+            }
+          }
+        }
       }
       bumpRender();
     },
