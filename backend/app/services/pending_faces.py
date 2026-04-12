@@ -32,6 +32,7 @@ import struct
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
+from app.models import iso_utc
 from app.services import cache as cache_service
 from app.services.recognition import cosine_match
 
@@ -88,9 +89,9 @@ def _row_to_item(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
         "patient_id": str(row["patient_id"]),
         "thumbnail_b64": row["thumbnail_b64"],
         "thumbnail_mime": row["thumbnail_mime"],
-        "captured_at": row["captured_at"],
-        "created_at": row["created_at"],
-        "updated_at": row["updated_at"],
+        "captured_at": iso_utc(row["captured_at"]),
+        "created_at": iso_utc(row["created_at"]),
+        "updated_at": iso_utc(row["updated_at"]),
     }
 
 
@@ -374,8 +375,8 @@ def accept_pending_face(
         "title": face_row["title"],
         "description": face_row["description"],
         "has_embedding": face_row["embedding"] is not None,
-        "created_at": face_row["created_at"],
-        "updated_at": face_row["updated_at"],
+        "created_at": iso_utc(face_row["created_at"]),
+        "updated_at": iso_utc(face_row["updated_at"]),
     }
 
 
