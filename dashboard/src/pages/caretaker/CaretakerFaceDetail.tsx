@@ -18,6 +18,7 @@ import { useAppAuth } from '../../auth/useAppAuth';
 import { useAuthedFetch } from '../../auth/useAuthedFetch';
 import { useMe } from '../../auth/useMe';
 import {
+  clearFaceEmbedding,
   createMemory,
   deleteFace,
   deleteMemory,
@@ -77,6 +78,7 @@ export function CaretakerFaceDetailPage(): ReactElement {
   const [editingMemoryContent, setEditingMemoryContent] = useState('');
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingClearScan, setConfirmingClearScan] = useState(false);
 
   const updateFaceMut = useMutation({
     mutationFn: async (): Promise<FaceObject> => {
@@ -143,6 +145,17 @@ export function CaretakerFaceDetailPage(): ReactElement {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['faces', patient_id] });
       navigate(`/caretaker/${patient_id}/faces`);
+    },
+  });
+
+  const clearScanMut = useMutation({
+    mutationFn: async (): Promise<FaceObject> => {
+      if (!face) throw new Error('Face not loaded');
+      return clearFaceEmbedding(fetcher, face.face_id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['faces', patient_id] });
+      setConfirmingClearScan(false);
     },
   });
 
@@ -545,6 +558,91 @@ export function CaretakerFaceDetailPage(): ReactElement {
             >
               Danger zone
             </div>
+
+            {/* Clear face scan row (API_SPEC §3.6) */}
+            <div
+              className="flex items-start justify-between flex-wrap"
+              style={{ gap: 12, paddingBottom: 16 }}
+            >
+              <div style={{ maxWidth: '62ch' }}>
+                <p
+                  className="font-body text-on-surface"
+                  style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}
+                >
+                  Clear this person's face scan
+                </p>
+                <p
+                  className="font-body text-tertiary"
+                  style={{ fontSize: 13, lineHeight: 1.45, margin: '4px 0 0' }}
+                >
+                  Keeps name, title, description, and memories. Vision
+                  will re-scan them the next time they appear.
+                  {face.has_embedding ? null : ' (No scan on file yet.)'}
+                </p>
+              </div>
+              {!confirmingClearScan ? (
+                <button
+                  type="button"
+                  disabled={!face.has_embedding}
+                  onClick={() => setConfirmingClearScan(true)}
+                  className="font-headline uppercase"
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    padding: '8px 14px',
+                    border: '1px solid var(--outline-variant)',
+                    background: 'transparent',
+                    color: face.has_embedding
+                      ? 'var(--on-surface)'
+                      : 'var(--tertiary)',
+                    cursor: face.has_embedding ? 'pointer' : 'not-allowed',
+                    borderRadius: 2,
+                    opacity: face.has_embedding ? 1 : 0.45,
+                  }}
+                >
+                  Clear scan
+                </button>
+              ) : (
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingClearScan(false)}
+                    className="font-headline uppercase text-tertiary"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '6px 12px',
+                      border: '1px solid var(--outline-variant)',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      borderRadius: 2,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => clearScanMut.mutate()}
+                    disabled={clearScanMut.isPending}
+                    className="font-headline uppercase"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '6px 12px',
+                      border: '1px solid var(--on-surface)',
+                      background: 'var(--on-surface)',
+                      color: 'var(--surface)',
+                      cursor: clearScanMut.isPending ? 'not-allowed' : 'pointer',
+                      borderRadius: 2,
+                      opacity: clearScanMut.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {clearScanMut.isPending ? 'Clearing…' : 'Yes, clear scan'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {!confirmingDelete ? (
               <div className="flex items-center justify-end">
                 <button

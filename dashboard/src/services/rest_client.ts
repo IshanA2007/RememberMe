@@ -152,6 +152,21 @@ export async function setFaceEmbedding(
   return parseJson<FaceObject>(res);
 }
 
+/** Clear a face's stored embedding while keeping the row + memories
+ *  (API_SPEC §3.6). After this call the next Vision sighting will produce a
+ *  fresh pending face the caretaker/patient can re-register.
+ */
+export async function clearFaceEmbedding(
+  f: AuthedFetch,
+  faceId: string,
+): Promise<FaceObject> {
+  const res = await f(
+    `/api/faces/${encodeURIComponent(faceId)}/embedding`,
+    { method: 'DELETE' },
+  );
+  return parseJson<FaceObject>(res);
+}
+
 // ---------- Pending Faces (API_SPEC §3b) ----------------------------------
 
 export async function listPendingFaces(

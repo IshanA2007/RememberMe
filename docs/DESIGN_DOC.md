@@ -154,8 +154,9 @@ Every memory row has a `source` enum:
 - `caretaker` — caretaker-created or caretaker-edited
 
 Edit authority:
-- Patient may CRUD `manual` memories on their own faces
-- Caretaker may CRUD any memory on any assigned patient's faces (including `conversation` ones, allowing correction of LLM errors)
+- Patient may CRUD any memory on their own faces, including `conversation`-source memories — the LLM sometimes mis-paraphrases what was said and the patient should be able to correct their own record without needing to ask the caretaker. The `source` tag is still immutable (a `conversation` memory stays tagged `conversation` after edit so the audit trail is preserved).
+- Caretaker may CRUD any memory on any assigned patient's faces. This remains the path for caretakers who want to correct an LLM error on a patient's behalf.
+- Patients and caretakers may both CRUD faces on the patient's own roster, including creating a face with name + title only (embedding captured later by Vision) and clearing an existing face's embedding so Vision captures a fresh one.
 
 ### 8.7 ElevenLabs key stays server-side
 All TTS/STT calls go through `/tts/synthesize` and `/stt/transcribe`. The client never sees the ElevenLabs API key.

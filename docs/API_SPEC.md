@@ -62,7 +62,8 @@ Error codes:
 | GET memories                  | ✓              | ✓                                | ✗                          |
 | POST memory (source=manual)   | ✓              | ✗ (must use source=caretaker)    | ✗                          |
 | POST memory (source=caretaker)| ✗              | ✓                                | ✗                          |
-| PATCH/DELETE memory any source| own manual only| any                              | ✗                          |
+| PATCH/DELETE memory any source| any on own face| any                              | ✗                          |
+| DELETE face embedding         | ✓              | ✓                                | ✗                          |
 | GET reminders                 | ✓              | ✓                                | ✗                          |
 | POST/PATCH/DELETE reminder    | ✓              | ✓                                | ✗                          |
 | POST conversation             | ✓ (own only)   | ✗                                | ✗                          |
@@ -271,6 +272,40 @@ Response 422 if embedding length ≠ 512 or contains non-finite values.
 Purpose: remove a face and cascade-delete its memories.
 
 Response 204 on success.
+
+### 3.6 `DELETE /api/faces/{face_id}/embedding`
+
+Purpose: clear the face scan (embedding BLOB) while keeping the face row, its name, title, description, and memories intact. After this call, `has_embedding` is `false` and Vision will treat the person as unknown the next time they appear — capturing a fresh pending face for re-registration.
+
+Use case: the stored embedding is stale (different hairstyle, lighting, glasses) and the patient or caretaker wants to re-scan the face without losing the person's memories.
+
+Request: no body.
+
+Response 200:
+```json
+{
+  "face_id": "42",
+  "patient_id": "7",
+  "name": "Sarah",
+  "title": "daughter",
+  "description": "Lives in Seattle.",
+  "has_embedding": false,
+  "created_at": "2026-02-15T09:30:00Z",
+  "updated_at": "2026-04-12T08:00:00Z"
+}
+```
+
+Side effects: invalidates the patient's in-memory embedding cache.
+
+Response 404: `FACE_NOT_FOUND` if the face does not belong to the caller's patient scope.
+
+---
+
+### 4. Memory PATCH/DELETE — authority update
+
+Patients may now `PATCH` and `DELETE` memories on ANY face they own, regardless of `source`. This supports the common flow where a patient wants to correct or remove a `conversation`-source memory (LLM-extracted from a verbal exchange) that misrepresents what was said, without needing caretaker intervention. Caretakers retain the same authority on any assigned patient's memories.
+
+`source` is still immutable — a `conversation` memory stays tagged `conversation` even after patient edits.
 
 ---
 

@@ -344,15 +344,38 @@ export function PatientRemindersPage(): ReactElement {
         {/* TODAY banner */}
         <section style={{ paddingBottom: 32 }}>
           <div
-            className="font-label uppercase text-tertiary"
+            className="flex items-center justify-between"
             style={{
-              fontSize: 11,
-              letterSpacing: '0.14em',
               paddingBottom: 10,
               borderBottom: '1px solid var(--outline-variant)',
             }}
           >
-            Today
+            <span
+              className="font-label uppercase text-tertiary"
+              style={{ fontSize: 11, letterSpacing: '0.14em' }}
+            >
+              Today
+            </span>
+            {!adding ? (
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="font-headline uppercase"
+                style={{
+                  fontSize: 12,
+                  letterSpacing: '0.12em',
+                  padding: '8px 14px',
+                  border: '1px solid var(--accent)',
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--on-primary)',
+                  cursor: 'pointer',
+                  borderRadius: 2,
+                }}
+                aria-label="Add a new reminder"
+              >
+                + Add reminder
+              </button>
+            ) : null}
           </div>
           <h2
             className="font-headline text-on-surface"
@@ -368,6 +391,25 @@ export function PatientRemindersPage(): ReactElement {
             {formatTodayHeadline(new Date())}
           </h2>
         </section>
+
+        {/* Inline add form — shown when user clicks Add reminder.
+            Rendered at the top so it's immediately in view regardless of
+            which calendar day is selected below. */}
+        {adding ? (
+          <section style={{ paddingBottom: 24 }}>
+            <InlineReminderForm
+              values={addValues}
+              onChange={setAddValues}
+              onCancel={() => {
+                setAdding(false);
+                setAddValues(emptyForm(new Date(Date.now() + 60 * 60_000)));
+              }}
+              onSubmit={() => createMut.mutate()}
+              submitting={createMut.isPending}
+              label="New reminder"
+            />
+          </section>
+        ) : null}
 
         {/* Today's reminders */}
         <section style={{ paddingBottom: 40 }}>
@@ -413,20 +455,6 @@ export function PatientRemindersPage(): ReactElement {
           >
             {activeDay.toUTCString().slice(0, 16)}
           </div>
-
-          {adding ? (
-            <InlineReminderForm
-              values={addValues}
-              onChange={setAddValues}
-              onCancel={() => {
-                setAdding(false);
-                setAddValues(emptyForm(new Date(Date.now() + 60 * 60_000)));
-              }}
-              onSubmit={() => createMut.mutate()}
-              submitting={createMut.isPending}
-              label="New reminder"
-            />
-          ) : null}
 
           {editingId ? (
             <InlineReminderForm
@@ -474,7 +502,7 @@ export function PatientRemindersPage(): ReactElement {
         </button>
 
         <div className="flex items-center" style={{ gap: 8 }}>
-          {editMode ? (
+          {!adding ? (
             <button
               type="button"
               onClick={() => setAdding(true)}

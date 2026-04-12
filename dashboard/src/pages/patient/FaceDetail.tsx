@@ -2,10 +2,11 @@
  * PatientFaceDetailPage — `/patient/faces/:id` (FRONTEND_SPEC §2.3).
  *
  * Face header (name / title / description) plus a chronological MemoryList.
- * Patient authority (API_SPEC §0.4):
+ * Patient authority (API_SPEC §0.4, updated 2026-04-12):
  *   - may create `manual` memories
- *   - may edit / delete their own `manual` memories
- *   - may NOT touch `conversation` or `caretaker` memories
+ *   - may edit / delete ANY memory on their own face (including LLM-extracted
+ *     `conversation` memories — useful for fixing what was mis-paraphrased)
+ *   - may delete the face or clear its stored face scan (API_SPEC §3.5/§3.6)
  *
  * Edit Mode toggles whether the header fields are editable and reveals
  * Save / Cancel buttons. Memory add/edit use inline expanding forms —
@@ -23,7 +24,9 @@ import { useAppAuth } from '../../auth/useAppAuth';
 import { useAuthedFetch } from '../../auth/useAuthedFetch';
 import { useMe } from '../../auth/useMe';
 import {
+  clearFaceEmbedding,
   createMemory,
+  deleteFace,
   deleteMemory,
   listFaces,
   listMemories,
@@ -83,6 +86,10 @@ export function PatientFaceDetailPage(): ReactElement {
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [editingMemoryContent, setEditingMemoryContent] = useState('');
 
+  // Destructive-action confirmations (inline, not modals).
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingClearScan, setConfirmingClearScan] = useState(false);
+
   const updateFaceMut = useMutation({
     mutationFn: async (): Promise<FaceObject> => {
       if (!face) throw new Error('Face not loaded');
@@ -140,6 +147,28 @@ export function PatientFaceDetailPage(): ReactElement {
     },
   });
 
+  const deleteFaceMut = useMutation({
+    mutationFn: async (): Promise<void> => {
+      if (!face) throw new Error('Face not loaded');
+      await deleteFace(fetcher, face.face_id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['faces', patientId] });
+      navigate('/patient/faces');
+    },
+  });
+
+  const clearScanMut = useMutation({
+    mutationFn: async (): Promise<FaceObject> => {
+      if (!face) throw new Error('Face not loaded');
+      return clearFaceEmbedding(fetcher, face.face_id);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['faces', patientId] });
+      setConfirmingClearScan(false);
+    },
+  });
+
   if (!me || !faceId) return <div />;
 
   const handleToggleEdit = (): void => {
@@ -150,9 +179,11 @@ export function PatientFaceDetailPage(): ReactElement {
     setEditing(true);
   };
 
-  const canEditMemory = (m: MemoryObject): boolean => {
-    // Patient can only edit their own `manual` memories.
-    return m.source === 'manual' && m.created_by_user_id === me.user_id;
+  const canEditMemory = (_m: MemoryObject): boolean => {
+    // API_SPEC §0.4 (updated): patient may edit ANY memory on their own face,
+    // including caretaker- and conversation-sourced ones. The server enforces
+    // this again via ensure_patient_or_caretaker_of on the owning patient.
+    return true;
   };
 
   const handleEditMemory = (m: MemoryObject): void => {
@@ -525,6 +556,188 @@ export function PatientFaceDetailPage(): ReactElement {
             onCancel={() => setEditing(false)}
             onSave={() => updateFaceMut.mutate()}
           />
+        ) : null}
+
+        {/* Destructive actions zone — inline, no modals. */}
+        {face ? (
+          <section
+            style={{
+              marginTop: 32,
+              paddingTop: 20,
+              borderTop: '1px solid var(--outline-variant)',
+            }}
+            aria-label="Destructive actions"
+          >
+            <div
+              className="font-label uppercase text-tertiary"
+              style={{ fontSize: 11, letterSpacing: '0.14em', marginBottom: 12 }}
+            >
+              Manage this person
+            </div>
+
+            {/* Clear face scan row */}
+            <div
+              className="flex items-start justify-between flex-wrap"
+              style={{ gap: 12, paddingBottom: 16 }}
+            >
+              <div style={{ maxWidth: '62ch' }}>
+                <p
+                  className="font-body text-on-surface"
+                  style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}
+                >
+                  Clear the face scan
+                </p>
+                <p
+                  className="font-body text-tertiary"
+                  style={{ fontSize: 13, lineHeight: 1.45, margin: '4px 0 0' }}
+                >
+                  Keep {face.name}'s name, notes, and memories, but forget
+                  how they look. Vision will re-scan them the next time they
+                  appear. {face.has_embedding ? null : ' (No scan on file yet.)'}
+                </p>
+              </div>
+              {!confirmingClearScan ? (
+                <button
+                  type="button"
+                  disabled={!face.has_embedding}
+                  onClick={() => setConfirmingClearScan(true)}
+                  className="font-headline uppercase"
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    padding: '8px 14px',
+                    border: '1px solid var(--outline-variant)',
+                    background: 'transparent',
+                    color: face.has_embedding
+                      ? 'var(--on-surface)'
+                      : 'var(--tertiary)',
+                    cursor: face.has_embedding ? 'pointer' : 'not-allowed',
+                    borderRadius: 2,
+                    opacity: face.has_embedding ? 1 : 0.45,
+                  }}
+                >
+                  Clear scan
+                </button>
+              ) : (
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingClearScan(false)}
+                    className="font-headline uppercase text-tertiary"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '8px 14px',
+                      border: '1px solid var(--outline-variant)',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      borderRadius: 2,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => clearScanMut.mutate()}
+                    disabled={clearScanMut.isPending}
+                    className="font-headline uppercase"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '8px 14px',
+                      border: '1px solid var(--on-surface)',
+                      background: 'var(--on-surface)',
+                      color: 'var(--surface)',
+                      cursor: clearScanMut.isPending ? 'not-allowed' : 'pointer',
+                      borderRadius: 2,
+                      opacity: clearScanMut.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {clearScanMut.isPending ? 'Clearing…' : 'Yes, clear scan'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Delete person row */}
+            <div
+              className="flex items-start justify-between flex-wrap"
+              style={{ gap: 12, paddingTop: 8 }}
+            >
+              <div style={{ maxWidth: '62ch' }}>
+                <p
+                  className="font-body text-on-surface"
+                  style={{ fontSize: 15, lineHeight: 1.5, margin: 0 }}
+                >
+                  Remove {face.name} from your people
+                </p>
+                <p
+                  className="font-body text-tertiary"
+                  style={{ fontSize: 13, lineHeight: 1.45, margin: '4px 0 0' }}
+                >
+                  This deletes their scan and every memory attached to them.
+                  It cannot be undone.
+                </p>
+              </div>
+              {!confirmingDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="font-headline uppercase"
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: '0.12em',
+                    padding: '8px 14px',
+                    border: '1px solid var(--error)',
+                    background: 'transparent',
+                    color: 'var(--error)',
+                    cursor: 'pointer',
+                    borderRadius: 2,
+                  }}
+                >
+                  Delete person
+                </button>
+              ) : (
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    className="font-headline uppercase text-tertiary"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '8px 14px',
+                      border: '1px solid var(--outline-variant)',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      borderRadius: 2,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteFaceMut.mutate()}
+                    disabled={deleteFaceMut.isPending}
+                    className="font-headline uppercase"
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: '0.12em',
+                      padding: '8px 14px',
+                      border: '1px solid var(--error)',
+                      background: 'var(--error)',
+                      color: 'white',
+                      cursor: deleteFaceMut.isPending ? 'not-allowed' : 'pointer',
+                      borderRadius: 2,
+                      opacity: deleteFaceMut.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {deleteFaceMut.isPending ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         ) : null}
       </main>
 

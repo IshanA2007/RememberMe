@@ -182,10 +182,10 @@ def update_memory(
 ) -> MemoryObject:
     """Edit a memory's content. Source is immutable (API_SPEC §4.3).
 
-    Authority:
-      * Patient: only their own `manual` memories (matches on
-        `created_by_user_id` + `source='manual'`).
+    Authority (API_SPEC §0.4, updated to let patients correct LLM output):
+      * Patient: any memory on their own face, regardless of source.
       * Caretaker: any memory on an assigned patient's face.
+    `ensure_patient_or_caretaker_of` covers both cases in one call.
     """
     mid = parse_id(memory_id, code="MEMORY_NOT_FOUND", message="Memory not found")
     _check_write_limit(auth.user_id)
@@ -200,17 +200,6 @@ def update_memory(
         )
     patient_id = int(row["patient_id"])
     ensure_patient_or_caretaker_of(db, auth, patient_id)
-
-    if auth.role == "patient":
-        if row["source"] != "manual" or int(row["created_by_user_id"] or 0) != auth.user_id:
-            raise http_error(
-                status.HTTP_403_FORBIDDEN,
-                "FORBIDDEN",
-                "Patient may only edit their own manual memories",
-                {"memory_id": memory_id},
-            )
-    # Caretakers have already passed the authority check; they may edit any
-    # source on an assigned patient (per API_SPEC §4.3).
 
     return memory_service.update_memory_content(db, mid, payload.content.strip())
 
@@ -230,7 +219,7 @@ def delete_memory(
     auth: AuthContext = Depends(get_auth),
     db: sqlite3.Connection = Depends(get_db),
 ) -> Response:
-    """Delete a memory. Same authority rules as PATCH."""
+    """Delete a memory. Same authority rules as PATCH (API_SPEC §4.4)."""
     mid = parse_id(memory_id, code="MEMORY_NOT_FOUND", message="Memory not found")
     _check_write_limit(auth.user_id)
 
@@ -244,15 +233,6 @@ def delete_memory(
         )
     patient_id = int(row["patient_id"])
     ensure_patient_or_caretaker_of(db, auth, patient_id)
-
-    if auth.role == "patient":
-        if row["source"] != "manual" or int(row["created_by_user_id"] or 0) != auth.user_id:
-            raise http_error(
-                status.HTTP_403_FORBIDDEN,
-                "FORBIDDEN",
-                "Patient may only delete their own manual memories",
-                {"memory_id": memory_id},
-            )
 
     memory_service.delete_memory(db, mid)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

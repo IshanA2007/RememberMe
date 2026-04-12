@@ -5,10 +5,18 @@
  * Face nodes are clickable and route to `/patient/faces/:id`.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import type { ReactElement } from 'react';
-import { LayoutDashboard, Users, Bell, Settings, LogOut, ChevronLeft } from 'lucide-react';
+import { useState, type ReactElement } from 'react';
+import {
+  LayoutDashboard,
+  Users,
+  Bell,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  UserPlus,
+} from 'lucide-react';
 
 import { Header } from '../../components/Header';
 import { MemoryTree } from '../../components/MemoryTree';
@@ -16,8 +24,16 @@ import { PendingFacesSection } from '../../components/PendingFacesSection';
 import { useAppAuth } from '../../auth/useAppAuth';
 import { useAuthedFetch } from '../../auth/useAuthedFetch';
 import { useMe } from '../../auth/useMe';
-import { listFaces } from '../../services/rest_client';
-import type { FaceListResponse, FaceObject } from '../../types/api';
+import { createFace, listFaces } from '../../services/rest_client';
+import type {
+  FaceCreateRequest,
+  FaceListResponse,
+  FaceObject,
+} from '../../types/api';
+
+const NAME_MAX = 80;
+const TITLE_MAX = 40;
+const DESCRIPTION_MAX = 500;
 
 interface NavItemProps {
   label: string;
@@ -63,6 +79,7 @@ export function PatientFacesPage(): ReactElement {
   const navigate = useNavigate();
   const fetcher = useAuthedFetch();
   const auth = useAppAuth();
+  const qc = useQueryClient();
 
   const patientId = me?.user_id ?? '';
 
@@ -72,6 +89,38 @@ export function PatientFacesPage(): ReactElement {
     staleTime: 15_000,
     queryFn: () => listFaces(fetcher, patientId),
   });
+
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+
+  const createMut = useMutation({
+    mutationFn: async (): Promise<FaceObject> => {
+      if (!patientId) throw new Error('No patient');
+      if (!newName.trim()) throw new Error('Name is required');
+      const body: FaceCreateRequest = {
+        name: newName.trim(),
+        title: newTitle.trim() ? newTitle.trim() : null,
+        description: newDescription.trim() ? newDescription.trim() : null,
+      };
+      return createFace(fetcher, patientId, body);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['faces', patientId] });
+      setAdding(false);
+      setNewName('');
+      setNewTitle('');
+      setNewDescription('');
+    },
+  });
+
+  const cancelAdd = (): void => {
+    setAdding(false);
+    setNewName('');
+    setNewTitle('');
+    setNewDescription('');
+  };
 
   if (!me) return <div />;
 
@@ -173,19 +222,180 @@ export function PatientFacesPage(): ReactElement {
           <div className="w-full max-w-6xl mx-auto">
             {/* Hero header */}
             <header
-              className="mb-8"
+              className="mb-8 flex items-start justify-between gap-6 flex-wrap"
               style={{
                 animation: 'slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
               }}
             >
-              <h1
-                className="font-headline font-extrabold text-on-surface tracking-tight mb-2"
-                style={{ fontSize: 36 }}
-              >
-                My People
-              </h1>
-              <p className="text-tertiary text-lg">Family and friends in your life.</p>
+              <div>
+                <h1
+                  className="font-headline font-extrabold text-on-surface tracking-tight mb-2"
+                  style={{ fontSize: 36 }}
+                >
+                  My People
+                </h1>
+                <p className="text-tertiary text-lg">Family and friends in your life.</p>
+              </div>
+              {!adding ? (
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="flex items-center gap-2 font-headline transition-all"
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    padding: '12px 20px',
+                    borderRadius: 16,
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <UserPlus size={18} />
+                  Add a person
+                </button>
+              ) : null}
             </header>
+
+            {/* Inline add-person form */}
+            {adding ? (
+              <section
+                className="mb-6 rounded-[2rem] p-6"
+                style={{
+                  background: 'var(--surface-container-low)',
+                  border: '1px solid var(--outline-variant)',
+                  animation: 'slideUp 0.3s ease',
+                }}
+              >
+                <div
+                  className="font-label uppercase text-tertiary mb-3"
+                  style={{ fontSize: 11, letterSpacing: '0.14em' }}
+                >
+                  New person
+                </div>
+                <div className="flex flex-col" style={{ gap: 10, maxWidth: '62ch' }}>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value.slice(0, NAME_MAX))}
+                    placeholder="Name (required)"
+                    className="font-headline text-on-surface"
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 600,
+                      border: '1px solid var(--outline-variant)',
+                      background: 'var(--surface)',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      color: 'var(--on-surface)',
+                    }}
+                    aria-label="Name"
+                    autoFocus
+                  />
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value.slice(0, TITLE_MAX))}
+                    placeholder="Relationship (e.g. daughter, friend, doctor)"
+                    className="font-body text-on-surface"
+                    style={{
+                      fontSize: 16,
+                      border: '1px solid var(--outline-variant)',
+                      background: 'var(--surface)',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      color: 'var(--on-surface)',
+                    }}
+                    aria-label="Relationship"
+                  />
+                  <textarea
+                    value={newDescription}
+                    onChange={(e) =>
+                      setNewDescription(e.target.value.slice(0, DESCRIPTION_MAX))
+                    }
+                    placeholder="A note to help remember them (optional)"
+                    className="font-body text-on-surface"
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.55,
+                      border: '1px solid var(--outline-variant)',
+                      background: 'var(--surface)',
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      minHeight: 80,
+                      color: 'var(--on-surface)',
+                      resize: 'vertical',
+                    }}
+                    aria-label="Description"
+                  />
+                  {createMut.isError ? (
+                    <p
+                      className="font-body"
+                      style={{ color: 'var(--error)', fontSize: 13 }}
+                    >
+                      Could not save. Please try again.
+                    </p>
+                  ) : null}
+                  <div className="flex items-center justify-end" style={{ gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={cancelAdd}
+                      className="font-headline text-tertiary"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        padding: '8px 16px',
+                        border: '1px solid var(--outline-variant)',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        borderRadius: 12,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => createMut.mutate()}
+                      disabled={createMut.isPending || !newName.trim()}
+                      className="font-headline"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        padding: '8px 16px',
+                        border: 'none',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        cursor:
+                          createMut.isPending || !newName.trim()
+                            ? 'not-allowed'
+                            : 'pointer',
+                        borderRadius: 12,
+                        opacity:
+                          createMut.isPending || !newName.trim() ? 0.55 : 1,
+                      }}
+                    >
+                      {createMut.isPending ? 'Saving…' : 'Save person'}
+                    </button>
+                  </div>
+                </div>
+                <p
+                  className="font-body text-tertiary"
+                  style={{ fontSize: 12, marginTop: 10, maxWidth: '62ch' }}
+                >
+                  Vision will capture this person's face the next time it
+                  sees them. You can add more details or memories from their
+                  page.
+                </p>
+              </section>
+            ) : null}
 
             {/* Pending faces section */}
             {patientId ? (

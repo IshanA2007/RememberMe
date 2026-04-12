@@ -337,3 +337,50 @@ def set_face_embedding(
     assert row is not None
     cache_service.invalidate(patient_id)
     return _row_to_face(row)
+
+
+# ---------------------------------------------------------------------------
+# §3.6 DELETE /api/faces/{id}/embedding — clear face scan, keep the row
+# ---------------------------------------------------------------------------
+
+
+@router.delete("/faces/{face_id}/embedding", response_model=FaceObject)
+def clear_face_embedding(
+    face_id: str = Path(...),
+    auth: AuthContext = Depends(get_auth),
+    db: sqlite3.Connection = Depends(get_db),
+) -> FaceObject:
+    """Clear the stored face scan without touching name/title/description/memories.
+
+    After this call the face row still exists and its memories are preserved,
+    but `has_embedding` is `false` and Vision will treat the person as unknown
+    on the next sighting — producing a fresh pending_faces entry for
+    re-registration. Use this when the stored embedding is stale (lighting,
+    haircut, glasses, camera, etc.).
+    """
+    fid = parse_id(face_id, code="FACE_NOT_FOUND", message="Face not found")
+    _check_write_limit(auth.user_id)
+
+    existing = _fetch_face(db, fid)
+    if existing is None:
+        raise http_error(
+            status.HTTP_404_NOT_FOUND,
+            "FACE_NOT_FOUND",
+            "Face not found",
+            {"face_id": face_id},
+        )
+    patient_id = int(existing["patient_id"])
+    ensure_patient_or_caretaker_of(db, auth, patient_id)
+
+    db.execute(
+        """
+        UPDATE faces
+        SET embedding = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (fid,),
+    )
+    row = _fetch_face(db, fid)
+    assert row is not None
+    cache_service.invalidate(patient_id)
+    return _row_to_face(row)

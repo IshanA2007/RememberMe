@@ -169,12 +169,12 @@ Role enforcement: on mount of any `/patient/*` or `/caretaker/*` route, check `a
 - Memory list below, chronological desc
 - Each memory row: content, source badge, timestamp
 - Patient may:
+  - Add a new person (name + optional title + optional description); the face scan is captured next time Vision sees them
+  - Delete a person (cascades memories)
+  - Clear an existing face scan so Vision captures a fresh embedding on next sighting (keeps the person and their memories)
   - Add new memory (source=`manual`)
-  - Edit own `manual` memories
-  - Delete own `manual` memories
-- Patient may NOT:
-  - Add a new face (only Vision or caretaker)
-  - Edit `conversation` or `caretaker` memories
+  - Edit any memory on their own faces, regardless of source — including `conversation` memories the LLM produced verbally (the `source` field itself is never changed)
+  - Delete any memory on their own faces
 
 **Edit Mode toggle**:
 - Bottom-center button labeled `Edit`; toggles mode for the whole face-detail screen
@@ -200,8 +200,10 @@ Same shape as Patient portal with these differences:
 |-----------------------------|------------------------------------|-----------------------------------------|
 | Role pill                   | `PATIENT` (blue)                   | `CARETAKER` (green)                     |
 | Color scheme                | blue-based                          | green-based                              |
-| Memory edit authority       | own manual only                    | any memory (incl. correcting LLM outputs) |
-| Face add                    | disabled                            | enabled (name+title only; embedding deferred) |
+| Memory edit authority       | any on own face (incl. conversation) | any memory on assigned patients           |
+| Face add                    | enabled (name+title only; embedding deferred) | enabled (name+title only; embedding deferred) |
+| Face delete                 | enabled (cascades memories)        | enabled (cascades memories)               |
+| Clear face embedding        | enabled (keeps row, drops scan)    | enabled (keeps row, drops scan)           |
 | Multi-patient selector      | n/a                                 | `/caretaker` shows selector when `patients.length > 1` |
 | Activity view               | not shown                           | `/caretaker/:patient_id` top section shows recent recognitions + recent conversation memories |
 | Reminder authority          | CRUD own                            | CRUD for patient                         |
