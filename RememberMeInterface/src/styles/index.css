@@ -1,0 +1,49 @@
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/700.css";
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #0A0908;
+  --bg-elevated: #1A1816;
+  --ink-primary: #F5EEDC;
+  --ink-secondary: #B8AF9E;
+  --accent: #D4A65A;
+  --signal-cool: #6B8A8E;
+  --signal-warm: #C6733D;
+  --rule: #2B2825;
+  --focus-ring: #D4A65A;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-text: 'Newsreader', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--ink-primary);
+  font-family: var(--font-text);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
