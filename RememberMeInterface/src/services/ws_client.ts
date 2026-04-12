@@ -133,7 +133,12 @@ export class WsClient {
     ws.addEventListener("close", (ev: CloseEvent) => {
       this.stopPingTimer();
       this.ws = null;
-      const fatal = FATAL_CLOSE_CODES.has(ev.code) || this.stopped;
+      // Client-initiated close (`this.stopped`) is an intentional teardown —
+      // e.g. a React effect cleanup on unmount or StrictMode double-invoke.
+      // Do NOT surface it to the UI or schedule a reconnect; the caller that
+      // asked us to stop already knows.
+      if (this.stopped) return;
+      const fatal = FATAL_CLOSE_CODES.has(ev.code);
       this.callbacks.onClose?.(ev.code, ev.reason, fatal);
       if (!fatal) this.scheduleReconnect();
     });
