@@ -199,8 +199,11 @@ def _parse_dev_token(token: str) -> dict[str, Any]:
             details={"reason": "dev_empty_display"},
         )
     settings = get_settings()
+    # Role is embedded in the synthetic sub so a patient with dev-sub "1" and
+    # a caretaker with dev-sub "1" resolve to distinct user rows. Seed fixtures
+    # rely on `auth0|dev-<role>-<sub>` matching what we emit here.
     return {
-        "sub": f"auth0|dev-{sub}",
+        "sub": f"auth0|dev-{role}-{sub}",
         settings.AUTH0_ROLE_CLAIM: role,
         "name": display,
         # Email intentionally omitted — dev contexts do not have one.
