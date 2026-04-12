@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # NEVER default to true. See plan §0.5.
     BACKEND_DEV_AUTH_BYPASS: bool = False
 
+    # --- Seed fixture data on startup (hackathon dev only) ---
+    # DATA_SCHEMAS.md §10 fixtures. Safe to re-run; seed.py is idempotent.
+    SEED_ON_STARTUP: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -65,16 +65,19 @@ def apply_pending_migrations(
         if name in applied:
             continue
         sql = path.read_text(encoding="utf-8")
-        conn.execute("BEGIN")
+        # `executescript` issues an implicit COMMIT before and after the
+        # script, so we cannot wrap it in our own BEGIN/COMMIT pair. Instead
+        # we rely on the per-statement autocommit behavior of the pragma set
+        # in `db.open_connection` (isolation_level=None). Migration files use
+        # `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so a
+        # partial apply followed by a retry is idempotent.
         try:
             conn.executescript(sql)
             conn.execute(
                 "INSERT INTO schema_migrations (name) VALUES (?)",
                 (name,),
             )
-            conn.execute("COMMIT")
         except Exception:
-            conn.execute("ROLLBACK")
             raise
         newly_applied.append(name)
     return newly_applied
