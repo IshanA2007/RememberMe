@@ -194,12 +194,16 @@ export async function start(
   patientIdState = patientId;
   // MicVAD.new() handles getUserMedia + AudioWorklet setup internally.
   vad = await MicVAD.new({
-    // VAD model + worklet are served from /public/vad/; ORT WASM from
-    // /public/ort/. Copied from node_modules at dev setup so we don't
-    // depend on a CDN or on Vite's node_modules serving path (which
-    // cannot resolve `.mjs?import` for ORT's WASM workers).
+    // VAD model + worklet are served locally from /public/vad/ (copied
+    // from node_modules by scripts/copy-vad-assets.mjs) — they're loaded
+    // via fetch, which Vite's dev server allows.
+    //
+    // ORT WASM workers are loaded via dynamic `import()`, which Vite's
+    // dev server refuses for /public/ paths. Pin to the exact onnxruntime-web
+    // version declared by @ricky0123/vad-web@0.0.30 so the WASM ABI matches
+    // the JS wrapper version.
     baseAssetPath: "/vad/",
-    onnxWASMBasePath: "/ort/",
+    onnxWASMBasePath: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/",
     onSpeechEnd: (audio: Float32Array) => {
       // Fire-and-forget; we don't want to block the VAD event loop.
       void handleSpeechEnd(audio, options);
