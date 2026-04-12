@@ -12,7 +12,7 @@ On upstream failure: 502 UPSTREAM_ERROR with our error envelope.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 
 from app.deps import get_auth, http_error
 from app.models import TtsRequest
@@ -27,13 +27,14 @@ router = APIRouter()
 async def synthesize(
     payload: TtsRequest,
     auth: AuthContext = Depends(get_auth),
-) -> StreamingResponse:
-    """Synthesize speech for `text` and stream the audio back.
+) -> Response:
+    """Synthesize speech for `text` and return the buffered MP3.
 
-    We open the upstream connection and verify the status code BEFORE
-    creating the StreamingResponse. This ensures any UpstreamError
-    surfaces as a proper 502 JSON envelope instead of crashing inside
-    the response body after headers are already sent.
+    We buffer the full upstream response so the reply includes a
+    Content-Length header. Safari's HTMLAudioElement cannot play audio
+    from object-URLs created from chunked (no Content-Length) responses.
+    The frontend already calls res.blob() which buffers everything, so
+    streaming provided no real benefit.
     """
     if not default_limiter.check(make_key(auth.user_id, "tts"), 10, 60.0):
         raise http_error(
@@ -51,9 +52,10 @@ async def synthesize(
             f"ElevenLabs TTS failed: {exc}",
         ) from exc
 
-    async def _streamer():
-        async with stream:
-            async for chunk in stream.chunks():
-                yield chunk
+    chunks: list[bytes] = []
+    async with stream:
+        async for chunk in stream.chunks():
+            chunks.append(chunk)
+    body = b"".join(chunks)
 
-    return StreamingResponse(_streamer(), media_type="audio/mpeg")
+    return Response(content=body, media_type="audio/mpeg")

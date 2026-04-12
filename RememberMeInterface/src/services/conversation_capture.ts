@@ -1,21 +1,16 @@
 // Conversation capture → transcribe → submit pipeline.
 //
-// PIPELINE.md §2.1:
-//   1. Mic via getUserMedia → VAD (@ricky0123/vad-web MicVAD).
-//   2. Each segment is onset→2 s silence.
-//   3. Discard segments shorter than 5.0 s.
-//   4. Capture recognized face_ids at segment end (last 10 s, caller-supplied).
-//   5. Transcribe:
-//        Option A: POST /api/stt/transcribe
-//        Option B: browser SpeechRecognition (fallback)
-//   6. If transcript ≥ 10 chars, POST /api/conversations.
+// Transcription uses a single continuous SpeechRecognition session that runs
+// alongside the VAD. This same recognizer also detects "who is this?" trigger
+// phrases — Safari only allows ONE active SpeechRecognition at a time, so
+// voice_trigger.ts no longer runs its own.
 //
-// The VAD emits PCM samples at 16 kHz. We wrap them into a WAV blob via
-// `vad-web`'s own `utils.encodeWAV` for a format the backend STT can accept.
+// VAD thresholds are tuned so speech-end fires reliably even with ambient
+// noise (negativeSpeechThreshold raised, redemptionFrames lowered).
 
-import { MicVAD, utils as vadUtils } from "@ricky0123/vad-web";
+import { MicVAD } from "@ricky0123/vad-web";
 
-import { postConversation, stt, ApiError } from "./rest_client";
+import { postConversation } from "./rest_client";
 import type { Id } from "../types/api";
 
 /** CLAUDE.md §5 — minimum segment length. */
@@ -25,102 +20,147 @@ const MIN_TRANSCRIPT_CHARS = 10;
 /** WAV sample rate matches MicVAD's model input rate. */
 const SAMPLE_RATE_HZ = 16_000;
 
+/** Trigger phrases for "who is this?" detection (case-insensitive). */
+const TRIGGER_PHRASES: readonly string[] = [
+  "who is this",
+  "who's this",
+  "who is that",
+];
+
 export interface StartOptions {
-  /**
-   * Returns the `face_id`s active in the last 10 s at segment end (callers
-   * typically read this from a map keyed by frame_id of in-session matches).
-   */
   getRecentFaceIds: () => Id[];
-  /** Optional hook for logging or UI-side breadcrumbs. */
   onSegmentSubmitted?: (transcriptId: Id) => void;
-  /** Optional hook when a segment is discarded (too short / empty / failed). */
   onSegmentDiscarded?: (reason: string) => void;
+  /** Called when a "who is this?" trigger phrase is detected. */
+  onTriggerPhrase?: () => void;
 }
 
 let vad: MicVAD | null = null;
 let patientIdState: Id | null = null;
+let currentOptions: StartOptions | null = null;
 
-/**
- * Convert the VAD's Float32 PCM (±1.0, 16 kHz) into a mono WAV blob suitable
- * for `rest_client.stt`.
- */
-function samplesToWavBlob(samples: Float32Array): Blob {
-  const wavBuffer = vadUtils.encodeWAV(samples, 1, SAMPLE_RATE_HZ, 1, 16);
-  return new Blob([wavBuffer], { type: "audio/wav" });
-}
+// ---------------------------------------------------------------------------
+// Continuous browser SpeechRecognition — runs in parallel with the VAD.
+// Also handles "who is this?" trigger detection (replaces voice_trigger.ts).
+// ---------------------------------------------------------------------------
 
-/**
- * Fallback: browser SpeechRecognition reading from the same samples is NOT
- * possible (it grabs its own mic stream). When backend STT fails, we fall
- * through a second pass that uses `webkitSpeechRecognition` on the live
- * stream. Because we have no way to rewind, we best-effort transcribe a
- * short sample — PIPELINE.md §2.1 Option B explicitly allows this.
- */
-async function fallbackBrowserStt(): Promise<string | null> {
-  const w = window as unknown as {
-    SpeechRecognition?: new () => SpeechRecognitionFallback;
-    webkitSpeechRecognition?: new () => SpeechRecognitionFallback;
-  };
-  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-  if (Ctor === null) return null;
-  return await new Promise<string | null>((resolve) => {
-    const rec = new Ctor();
-    rec.continuous = false;
-    rec.interimResults = false;
-    rec.lang = "en-US";
-    const timeoutId = window.setTimeout(() => {
-      try {
-        rec.abort();
-      } catch {
-        // Ignore.
-      }
-      resolve(null);
-    }, 6_000);
-    rec.onresult = (ev) => {
-      window.clearTimeout(timeoutId);
-      const parts: string[] = [];
-      for (let i = 0; i < ev.results.length; i += 1) {
-        const r = ev.results[i];
-        if (r.isFinal && r.length > 0) parts.push(r[0].transcript);
-      }
-      resolve(parts.join(" ").trim() || null);
-    };
-    rec.onerror = () => {
-      window.clearTimeout(timeoutId);
-      resolve(null);
-    };
-    rec.onend = () => {
-      window.clearTimeout(timeoutId);
-      // resolve with null if no result already fired
-    };
-    try {
-      rec.start();
-    } catch {
-      window.clearTimeout(timeoutId);
-      resolve(null);
-    }
-  });
-}
-
-interface SpeechRecognitionFallback {
+interface SpeechRecognitionLike {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
   start(): void;
+  stop(): void;
   abort(): void;
-  onresult: (ev: {
-    results: {
-      length: number;
-      [idx: number]: {
-        isFinal: boolean;
-        length: number;
-        [i: number]: { transcript: string };
-      };
-    };
-  }) => void;
-  onerror: (ev: Event) => void;
-  onend: (ev: Event) => void;
+  onresult:
+    | ((ev: {
+        resultIndex: number;
+        results: {
+          length: number;
+          [idx: number]: {
+            isFinal: boolean;
+            length: number;
+            [i: number]: { transcript: string };
+          };
+        };
+      }) => void)
+    | null;
+  onerror: ((ev: { error: string }) => void) | null;
+  onend: (() => void) | null;
 }
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+let recognizer: SpeechRecognitionLike | null = null;
+let recognizerRunning = false;
+/** Accumulated final transcripts since last drain. */
+let transcriptBuffer: string[] = [];
+
+function drainTranscriptBuffer(): string {
+  const text = transcriptBuffer.join(" ").trim();
+  transcriptBuffer = [];
+  return text;
+}
+
+function startRecognizer(): void {
+  const Ctor = getSpeechRecognitionCtor();
+  if (Ctor === null) return;
+
+  const rec = new Ctor();
+  rec.continuous = true;
+  rec.interimResults = false;
+  rec.lang = "en-US";
+
+  rec.onresult = (ev) => {
+    for (let i = ev.resultIndex; i < ev.results.length; i += 1) {
+      const result = ev.results[i];
+      if (!result.isFinal || result.length === 0) continue;
+      const text = result[0].transcript.trim();
+      if (text.length === 0) continue;
+
+      transcriptBuffer.push(text);
+
+      // Check for "who is this?" trigger phrases.
+      const lower = text.toLowerCase();
+      const hit = TRIGGER_PHRASES.some((p) => lower.includes(p));
+      if (hit) {
+        console.log("[conversation_capture] Trigger phrase detected:", text);
+        currentOptions?.onTriggerPhrase?.();
+      }
+    }
+  };
+
+  rec.onerror = (ev) => {
+    if (ev.error !== "no-speech" && ev.error !== "aborted") {
+      recognizerRunning = false;
+    }
+  };
+
+  rec.onend = () => {
+    if (!recognizerRunning) return;
+    try {
+      rec.start();
+    } catch {
+      // Race between stop and restart — ignore.
+    }
+  };
+
+  recognizer = rec;
+  recognizerRunning = true;
+  try {
+    rec.start();
+  } catch {
+    recognizerRunning = false;
+    recognizer = null;
+  }
+}
+
+function stopRecognizer(): void {
+  recognizerRunning = false;
+  if (recognizer !== null) {
+    try {
+      recognizer.abort();
+    } catch {
+      // Ignore.
+    }
+    recognizer.onresult = null;
+    recognizer.onerror = null;
+    recognizer.onend = null;
+    recognizer = null;
+  }
+  transcriptBuffer = [];
+}
+
+// ---------------------------------------------------------------------------
+// VAD speech-end handler
+// ---------------------------------------------------------------------------
 
 async function handleSpeechEnd(
   samples: Float32Array,
@@ -134,8 +174,6 @@ async function handleSpeechEnd(
     return;
   }
 
-  // Record the start timestamp by subtracting the segment duration from now;
-  // MicVAD does not give us the segment onset clock directly.
   const endedAt = Date.now();
   const startedAtIso = new Date(
     endedAt - Math.round(segmentDurationSeconds * 1000),
@@ -143,26 +181,14 @@ async function handleSpeechEnd(
     .toISOString()
     .replace(/\.\d{3}Z$/, "Z");
 
-  // Transcribe: Option A (backend STT) → Option B (browser fallback).
-  const blob = samplesToWavBlob(samples);
-  let transcript: string | null = null;
-  try {
-    const res = await stt(blob, patientId);
-    transcript = res.transcript.trim();
-  } catch (err) {
-    if (err instanceof ApiError) {
-      // Fall through to browser STT.
-      transcript = await fallbackBrowserStt();
-    } else {
-      // Network or unexpected error — still try fallback.
-      transcript = await fallbackBrowserStt();
-    }
-  }
+  const transcript = drainTranscriptBuffer();
 
-  if (transcript === null || transcript.length < MIN_TRANSCRIPT_CHARS) {
+  if (transcript.length < MIN_TRANSCRIPT_CHARS) {
     opts.onSegmentDiscarded?.("empty_transcript");
     return;
   }
+
+  console.log("[conversation_capture] Submitting transcript:", transcript.slice(0, 80));
 
   const recognizedFaceIds = opts.getRecentFaceIds();
   try {
@@ -175,45 +201,45 @@ async function handleSpeechEnd(
     });
     opts.onSegmentSubmitted?.(submitResp.transcript_id);
   } catch {
-    // Submission failure is silent — the patient session continues.
     opts.onSegmentDiscarded?.("submit_failed");
   }
 }
 
-/**
- * Start the capture pipeline for the given patient. Idempotent while
- * running (subsequent calls are ignored). Resolves once the VAD worklet is
- * initialised and the mic is acquired — can reject if the user denies the
- * mic permission.
- */
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export async function start(
   patientId: Id,
   options: StartOptions,
 ): Promise<void> {
   if (vad !== null) return;
   patientIdState = patientId;
-  // MicVAD.new() handles getUserMedia + AudioWorklet setup internally.
+  currentOptions = options;
+
+  // Start the continuous recognizer BEFORE the VAD so it's already
+  // accumulating transcripts when the first speech segment fires.
+  startRecognizer();
+
   vad = await MicVAD.new({
-    // VAD model + worklet are served locally from /public/vad/ (copied
-    // from node_modules by scripts/copy-vad-assets.mjs) — they're loaded
-    // via fetch, which Vite's dev server allows.
-    //
-    // ORT WASM workers are loaded via dynamic `import()`, which Vite's
-    // dev server refuses for /public/ paths. Pin to the exact onnxruntime-web
-    // version declared by @ricky0123/vad-web@0.0.30 so the WASM ABI matches
-    // the JS wrapper version.
     baseAssetPath: "/vad/",
     onnxWASMBasePath: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/",
+    // Raise negativeSpeechThreshold so the VAD is quicker to decide
+    // "this is no longer speech" even with ambient noise. Lower
+    // redemptionFrames so fewer consecutive non-speech frames are needed
+    // before firing onSpeechEnd.
+    positiveSpeechThreshold: 0.5,
+    negativeSpeechThreshold: 0.5,
+    redemptionMs: 300,
     onSpeechEnd: (audio: Float32Array) => {
-      // Fire-and-forget; we don't want to block the VAD event loop.
       void handleSpeechEnd(audio, options);
     },
   });
   await vad.start();
 }
 
-/** Stop the capture pipeline. Safe to call multiple times. */
 export async function stop(): Promise<void> {
+  stopRecognizer();
   if (vad === null) return;
   try {
     await vad.destroy();
@@ -222,9 +248,9 @@ export async function stop(): Promise<void> {
   }
   vad = null;
   patientIdState = null;
+  currentOptions = null;
 }
 
-/** True if capture is currently active. */
 export function isRunning(): boolean {
   return vad !== null;
 }

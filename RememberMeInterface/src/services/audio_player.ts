@@ -1,32 +1,25 @@
-// Singleton audio player with cancel-on-new semantics.
+// Singleton audio player using Web Audio API with cancel-on-new semantics.
 //
 // Hard constraint from DESIGN_DOC.md §9.2 / FRONTEND_SPEC.md §1.4: at most
 // ONE audio cue plays at a time. A new `play(blob)` call always replaces the
 // current cue — there is no queue, no fade — per CLAUDE.md §4.
 //
-// We hold a single `HTMLAudioElement` module-wide. `URL.createObjectURL` is
-// revoked on every replacement to avoid leaking blob handles during long
-// sessions.
+// Uses AudioContext instead of HTMLAudioElement because Safari blocks
+// HTMLAudioElement.play() unless called directly from a user gesture.
+// An AudioContext only needs to be resume()'d once from a gesture, after
+// which all decodeAudioData + sourceNode.start() calls work freely.
 
 type Listener = (isPlaying: boolean) => void;
 
-let audioEl: HTMLAudioElement | null = null;
-let currentUrl: string | null = null;
+let ctx: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
 let isPlayingState = false;
 const listeners = new Set<Listener>();
 
-function ensureElement(): HTMLAudioElement {
-  if (audioEl !== null) return audioEl;
-  const el = new Audio();
-  el.preload = "auto";
-  el.addEventListener("ended", () => setPlaying(false));
-  el.addEventListener("pause", () => {
-    // `pause` fires on cancel-on-new; keep state truthful.
-    if (el.ended || el.currentTime === 0) setPlaying(false);
-  });
-  el.addEventListener("error", () => setPlaying(false));
-  audioEl = el;
-  return el;
+function ensureContext(): AudioContext {
+  if (ctx !== null) return ctx;
+  ctx = new AudioContext();
+  return ctx;
 }
 
 function setPlaying(next: boolean): void {
@@ -35,53 +28,75 @@ function setPlaying(next: boolean): void {
   for (const cb of listeners) cb(next);
 }
 
-function revokeCurrentUrl(): void {
-  if (currentUrl !== null) {
-    URL.revokeObjectURL(currentUrl);
-    currentUrl = null;
+/**
+ * Unlock the AudioContext. Call this from a user-gesture handler (click/tap)
+ * early in the app lifecycle. After this, all programmatic play() calls work
+ * without further gestures — even from SpeechRecognition callbacks.
+ */
+export function unlock(): void {
+  const c = ensureContext();
+  if (c.state === "suspended") {
+    void c.resume();
   }
 }
 
 /**
- * Play the given blob. Cancels any prior cue first — this is the rule that
- * keeps Vision to one audio stream. Returns when `.play()` has been called;
- * the actual `ended` event is delivered to subscribers.
+ * Play the given audio blob. Cancels any prior cue first.
  */
 export async function play(blob: Blob): Promise<void> {
-  const el = ensureElement();
-  // Cancel prior: pause, detach source, revoke URL.
-  try {
-    el.pause();
-  } catch {
-    // Pause on an already-paused element is fine.
+  const c = ensureContext();
+  // Resume just in case — no-op if already running.
+  if (c.state === "suspended") {
+    await c.resume();
   }
-  revokeCurrentUrl();
 
-  const url = URL.createObjectURL(blob);
-  currentUrl = url;
-  el.src = url;
-  el.load();
-  try {
-    await el.play();
-    setPlaying(true);
-  } catch {
-    // Autoplay rejection or navigation — treat as not playing so the
-    // speaking-layer UI collapses.
+  // Cancel prior source.
+  if (currentSource !== null) {
+    try {
+      currentSource.onended = null;
+      currentSource.stop();
+    } catch {
+      // Already stopped.
+    }
+    currentSource = null;
     setPlaying(false);
   }
+
+  const arrayBuf = await blob.arrayBuffer();
+  let audioBuffer: AudioBuffer;
+  try {
+    audioBuffer = await c.decodeAudioData(arrayBuf);
+  } catch (err) {
+    console.error("[audio_player] decodeAudioData failed:", err);
+    setPlaying(false);
+    return;
+  }
+
+  const source = c.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(c.destination);
+  source.onended = () => {
+    if (currentSource === source) {
+      currentSource = null;
+      setPlaying(false);
+    }
+  };
+  currentSource = source;
+  source.start();
+  setPlaying(true);
 }
 
 /** Explicit stop (e.g. on unmount). Fires `isPlaying=false`. */
 export function stop(): void {
-  if (audioEl !== null) {
+  if (currentSource !== null) {
     try {
-      audioEl.pause();
+      currentSource.onended = null;
+      currentSource.stop();
     } catch {
-      // Ignore.
+      // Already stopped.
     }
-    audioEl.currentTime = 0;
+    currentSource = null;
   }
-  revokeCurrentUrl();
   setPlaying(false);
 }
 
@@ -90,11 +105,6 @@ export function isPlaying(): boolean {
   return isPlayingState;
 }
 
-/**
- * Subscribe to play-state changes. The callback receives the new state
- * synchronously on transition. Not fired at subscription time — call
- * `isPlaying()` for the initial value.
- */
 export function subscribe(cb: Listener): void {
   listeners.add(cb);
 }

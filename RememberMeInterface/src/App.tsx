@@ -36,8 +36,25 @@ import * as conversationCapture from "./services/conversation_capture";
 import * as reminderPoller from "./services/reminder_poller";
 import { submitPendingFace, tts } from "./services/rest_client";
 import { getPatientId, hasSession } from "./services/session";
-import * as voiceTrigger from "./services/voice_trigger";
 import { RECOGNIZE_THROTTLE_MS, WsClient } from "./services/ws_client";
+
+/** Speak text via backend ElevenLabs TTS, falling back to browser
+ *  speechSynthesis when the backend is unavailable (e.g. quota exceeded). */
+async function speak(text: string): Promise<void> {
+  try {
+    const blob = await tts(text);
+    await audioPlayer.play(blob);
+  } catch {
+    // Backend TTS failed — use browser built-in speech synthesis.
+    if (typeof speechSynthesis !== "undefined") {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.lang = "en-US";
+      speechSynthesis.speak(utterance);
+    }
+  }
+}
 
 import type {
   Id,
@@ -120,6 +137,24 @@ export function App(): JSX.Element {
   const sessionOkRef = useRef<boolean>(hasSession());
 
   // ---------------------------------------------------------------------
+  // Unlock AudioContext on first user interaction so programmatic play()
+  // works from non-gesture contexts (e.g. SpeechRecognition callbacks).
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    const handler = () => {
+      audioPlayer.unlock();
+      document.removeEventListener("click", handler, true);
+      document.removeEventListener("touchstart", handler, true);
+    };
+    document.addEventListener("click", handler, true);
+    document.addEventListener("touchstart", handler, true);
+    return () => {
+      document.removeEventListener("click", handler, true);
+      document.removeEventListener("touchstart", handler, true);
+    };
+  }, []);
+
+  // ---------------------------------------------------------------------
   // Session gate (plan Step 9.1)
   // ---------------------------------------------------------------------
   useEffect(() => {
@@ -150,7 +185,6 @@ export function App(): JSX.Element {
           expiresAt: now + MATCH_LIFETIME_MS,
         });
         pendingByFrameIdRef.current.delete(msg.frame_id);
-        voiceTrigger.noteRecognitionMatch();
       } else {
         lastMatchByFrameIdRef.current.delete(msg.frame_id);
         pendingByFrameIdRef.current.set(msg.frame_id, {
@@ -270,41 +304,6 @@ export function App(): JSX.Element {
   }, [cameraReady, wsReady, appState]);
 
   // ---------------------------------------------------------------------
-  // Voice trigger (plan Step 9.7 / PIPELINE §4)
-  // ---------------------------------------------------------------------
-  useEffect(() => {
-    if (appState !== "ready") return;
-    voiceTrigger.start(() => {
-      // Find the newest active match.
-      const now = Date.now();
-      let newest: MatchInfo | null = null;
-      for (const info of lastMatchByFrameIdRef.current.values()) {
-        if (info.expiresAt <= now) continue;
-        if (newest === null || info.expiresAt > newest.expiresAt) newest = info;
-      }
-      if (newest === null) return;
-      const titleText =
-        newest.title !== null && newest.title.length > 0
-          ? newest.title
-          : "friend";
-      const memoryText =
-        newest.memorySummary.length > 0 ? ` ${newest.memorySummary}` : "";
-      const text = `This is your ${titleText}, ${newest.name}.${memoryText}`;
-      void (async (): Promise<void> => {
-        try {
-          const blob = await tts(text);
-          await audioPlayer.play(blob);
-        } catch {
-          // TTS failure is silent — the user still sees the card.
-        }
-      })();
-    });
-    return () => {
-      voiceTrigger.stop();
-    };
-  }, [appState]);
-
-  // ---------------------------------------------------------------------
   // Reminder poller (plan Step 9.8 / PIPELINE §3)
   // ---------------------------------------------------------------------
   useEffect(() => {
@@ -322,14 +321,7 @@ export function App(): JSX.Element {
           ? ` ${r.description}`
           : "";
       const text = `Reminder: ${r.title}.${descText}`;
-      void (async (): Promise<void> => {
-        try {
-          const blob = await tts(text);
-          await audioPlayer.play(blob);
-        } catch {
-          // TTS failure is silent.
-        }
-      })();
+      void speak(text);
     });
     return () => {
       reminderPoller.stop();
@@ -337,7 +329,8 @@ export function App(): JSX.Element {
   }, [appState]);
 
   // ---------------------------------------------------------------------
-  // Conversation capture (plan Step 9.9 / PIPELINE §2)
+  // Conversation capture + voice trigger (PIPELINE §2 + §4)
+  // Single SpeechRecognition handles both transcription and "who is this?"
   // ---------------------------------------------------------------------
   useEffect(() => {
     if (appState !== "ready") return;
@@ -355,6 +348,31 @@ export function App(): JSX.Element {
               if (info.expiresAt > cutoff) seen.add(info.face_id);
             }
             return Array.from(seen);
+          },
+          onTriggerPhrase: () => {
+            // "Who is this?" detected — find newest active match and speak.
+            const now = Date.now();
+            let newest: MatchInfo | null = null;
+            for (const info of lastMatchByFrameIdRef.current.values()) {
+              if (info.expiresAt <= now) continue;
+              if (newest === null || info.expiresAt > newest.expiresAt)
+                newest = info;
+            }
+            if (newest === null) {
+              console.warn("[trigger] 'Who is this?' heard but no active match");
+              return;
+            }
+            const titleText =
+              newest.title !== null && newest.title.length > 0
+                ? newest.title
+                : "friend";
+            const memoryText =
+              newest.memorySummary.length > 0
+                ? ` ${newest.memorySummary}`
+                : "";
+            const text = `This is your ${titleText}, ${newest.name}.${memoryText}`;
+            console.log("[trigger] Speaking:", text);
+            void speak(text);
           },
         });
       } catch {
