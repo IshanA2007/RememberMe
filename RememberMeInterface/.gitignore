@@ -3,3 +3,6 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
+# VAD + ORT runtime assets copied from node_modules by scripts/copy-vad-assets.mjs
+public/vad/
+public/ort/

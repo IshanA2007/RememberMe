@@ -194,8 +194,12 @@ export async function start(
   patientIdState = patientId;
   // MicVAD.new() handles getUserMedia + AudioWorklet setup internally.
   vad = await MicVAD.new({
-    // Only the callbacks we actually use. Others keep their defaults from
-    // vad-web (silence thresholds are tuned for conversational speech).
+    // VAD model + worklet are served from /public/vad/; ORT WASM from
+    // /public/ort/. Copied from node_modules at dev setup so we don't
+    // depend on a CDN or on Vite's node_modules serving path (which
+    // cannot resolve `.mjs?import` for ORT's WASM workers).
+    baseAssetPath: "/vad/",
+    onnxWASMBasePath: "/ort/",
     onSpeechEnd: (audio: Float32Array) => {
       // Fire-and-forget; we don't want to block the VAD event loop.
       void handleSpeechEnd(audio, options);
