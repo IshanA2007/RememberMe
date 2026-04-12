@@ -20,7 +20,7 @@ import sqlite3
 import struct
 from typing import Any
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Response, status
 
 from app.deps import get_auth, get_db, http_error
 from app.models import (
@@ -265,12 +265,16 @@ def update_face(
 # ---------------------------------------------------------------------------
 
 
-@router.delete("/faces/{face_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/faces/{face_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
 def delete_face(
     face_id: str = Path(...),
     auth: AuthContext = Depends(get_auth),
     db: sqlite3.Connection = Depends(get_db),
-) -> None:
+) -> Response:
     """Remove a face. Memories cascade via FK ON DELETE CASCADE."""
     fid = parse_id(face_id, code="FACE_NOT_FOUND", message="Face not found")
     _check_write_limit(auth.user_id)
@@ -288,7 +292,7 @@ def delete_face(
 
     db.execute("DELETE FROM faces WHERE id = ?", (fid,))
     cache_service.invalidate(patient_id)
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 
 from app.deps import get_auth, get_db, http_error
 from app.models import (
@@ -194,13 +194,15 @@ def update_reminder(
 
 
 @router.delete(
-    "/reminders/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT
+    "/reminders/{reminder_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
 )
 def delete_reminder(
     reminder_id: str = Path(...),
     auth: AuthContext = Depends(get_auth),
     db: sqlite3.Connection = Depends(get_db),
-) -> None:
+) -> Response:
     """Delete a reminder."""
     rid = parse_id(
         reminder_id, code="REMINDER_NOT_FOUND", message="Reminder not found"
@@ -217,4 +219,4 @@ def delete_reminder(
         )
     ensure_patient_or_caretaker_of(db, auth, int(existing.patient_id))
     scheduling.delete_reminder(db, rid)
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -7,19 +7,20 @@ Governed by:
     `ELEVENLABS_DEFAULT_VOICE_ID`)
 
 Contract:
-  * `synthesize(text, voice_id)` -> async iterator of raw MP3 bytes.
+  * `synthesize(text, voice_id)` -> TtsStream (async context manager).
+  * TtsStream.chunks() -> async iterator of raw MP3 bytes.
+  * `open_stream` performs the HTTP request and checks the status code
+    BEFORE returning, so the caller can raise a proper HTTP error before
+    the StreamingResponse sends headers.
   * Raises `UpstreamError` on non-2xx responses; router maps to 502.
   * Never logs the API key.
-
-We use `httpx.AsyncClient` with `stream()` so the audio chunks are yielded
-as soon as they arrive — the router pipes these into a FastAPI
-`StreamingResponse`, keeping TTFB low for the vision app.
 """
 
 from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
+from types import TracebackType
 
 from app.config import get_settings
 
@@ -34,15 +35,50 @@ class UpstreamError(Exception):
     """ElevenLabs TTS failed (non-2xx, timeout, network)."""
 
 
-async def synthesize(
-    text: str, voice_id: str | None = None
-) -> AsyncIterator[bytes]:
-    """Stream MP3 bytes from ElevenLabs for `text`.
+class TtsStream:
+    """Holds the open httpx stream; use as an async context manager."""
 
-    The response streams chunk-by-chunk. Consumers should iterate via
-    `async for chunk in synthesize(...)`. On any non-2xx from ElevenLabs
-    (or network failure) we raise `UpstreamError` — the router maps this
-    to `502 UPSTREAM_ERROR` per API_SPEC §7.1.
+    def __init__(self, client, response):  # noqa: ANN001
+        self._client = client
+        self._response = response
+
+    async def chunks(self) -> AsyncIterator[bytes]:
+        async for chunk in self._response.aiter_bytes(chunk_size=_CHUNK_SIZE):
+            if chunk:
+                yield chunk
+
+    async def close(self) -> None:
+        try:
+            await self._response.aclose()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            await self._client.aclose()
+        except Exception:  # noqa: BLE001
+            pass
+
+    async def __aenter__(self) -> "TtsStream":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self.close()
+
+
+async def open_stream(
+    text: str, voice_id: str | None = None
+) -> TtsStream:
+    """Open a TTS stream. Checks upstream status BEFORE returning.
+
+    The caller gets back a `TtsStream` only if ElevenLabs responded 2xx.
+    On any non-2xx (or network error) this raises `UpstreamError` so the
+    router can translate to a proper 502 before HTTP headers are sent.
+
+    The caller MUST close the stream (use `async with`).
     """
     import httpx  # deferred
 
@@ -54,35 +90,52 @@ async def synthesize(
         "accept": "audio/mpeg",
         "content-type": "application/json",
     }
-    # Model id / voice settings mirror ElevenLabs' canonical TTS request.
     payload = {
         "text": text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
     }
 
+    client = httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT_SECONDS)
     try:
-        async with httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT_SECONDS) as client:
-            async with client.stream(
-                "POST", url, headers=headers, json=payload
-            ) as response:
-                if response.status_code >= 400:
-                    # Read body for log context (never log API key / headers).
-                    body = await response.aread()
-                    safe = body[:256].decode("utf-8", errors="replace")
-                    logger.warning(
-                        "ElevenLabs TTS non-2xx: %s body=%s",
-                        response.status_code,
-                        safe,
-                    )
-                    raise UpstreamError(
-                        f"ElevenLabs returned {response.status_code}"
-                    )
-                async for chunk in response.aiter_bytes(chunk_size=_CHUNK_SIZE):
-                    if chunk:
-                        yield chunk
+        response = await client.send(
+            client.build_request("POST", url, headers=headers, json=payload),
+            stream=True,
+        )
+        if response.status_code >= 400:
+            body = await response.aread()
+            safe = body[:256].decode("utf-8", errors="replace")
+            logger.warning(
+                "ElevenLabs TTS non-2xx: %s body=%s",
+                response.status_code,
+                safe,
+            )
+            await response.aclose()
+            await client.aclose()
+            raise UpstreamError(
+                f"ElevenLabs returned {response.status_code}"
+            )
+        return TtsStream(client, response)
     except UpstreamError:
         raise
     except httpx.HTTPError as exc:
+        await client.aclose()
         logger.warning("ElevenLabs TTS network error: %s", exc)
         raise UpstreamError(f"ElevenLabs TTS network error: {exc}") from exc
+    except Exception:
+        await client.aclose()
+        raise
+
+
+# Keep the old generator interface as a convenience wrapper.
+async def synthesize(
+    text: str, voice_id: str | None = None
+) -> AsyncIterator[bytes]:
+    """Stream MP3 bytes from ElevenLabs for `text`.
+
+    Yields chunks; raises `UpstreamError` on failure. Prefer `open_stream`
+    in routers so the error surfaces before StreamingResponse sends headers.
+    """
+    async with await open_stream(text, voice_id) as stream:
+        async for chunk in stream.chunks():
+            yield chunk

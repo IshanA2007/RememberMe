@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 
 from app.deps import get_auth, get_db, http_error
 from app.models import (
@@ -220,12 +220,16 @@ def update_memory(
 # ---------------------------------------------------------------------------
 
 
-@router.delete("/memories/{memory_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/memories/{memory_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
 def delete_memory(
     memory_id: str = Path(...),
     auth: AuthContext = Depends(get_auth),
     db: sqlite3.Connection = Depends(get_db),
-) -> None:
+) -> Response:
     """Delete a memory. Same authority rules as PATCH."""
     mid = parse_id(memory_id, code="MEMORY_NOT_FOUND", message="Memory not found")
     _check_write_limit(auth.user_id)
@@ -251,4 +255,4 @@ def delete_memory(
             )
 
     memory_service.delete_memory(db, mid)
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

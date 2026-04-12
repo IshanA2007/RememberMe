@@ -78,8 +78,11 @@ interface ErrorInfo {
 const MATCH_LIFETIME_MS = 3_000;
 /** Recent-match window for conversation_capture (PIPELINE §2.1 step 5). */
 const RECENT_MATCH_WINDOW_MS = 10_000;
-/** Pending-face POST throttle per-frame_id — PIPELINE §1.6 step 43. */
-const PENDING_FACE_THROTTLE_MS = 10_000;
+/** Global cooldown between ANY pending-face POST — prevents the IoU tracker
+ *  reassigning frame_ids from spamming the queue with the same person. */
+const PENDING_FACE_GLOBAL_COOLDOWN_MS = 30_000;
+/** Cosine similarity threshold for client-side dedup against recent submissions. */
+const PENDING_FACE_CLIENT_DEDUP_THRESHOLD = 0.80;
 
 export function App(): JSX.Element {
   const [appState, setAppState] = useState<AppState>("booting");
@@ -107,8 +110,10 @@ export function App(): JSX.Element {
   const lastMatchReceivedAtByFrameIdRef = useRef<Map<string, number>>(
     new Map(),
   );
-  /** frame_id → last time we POSTed to /pending-faces (PIPELINE §1.6 step 43). */
-  const lastPendingSubmitByFrameIdRef = useRef<Map<string, number>>(new Map());
+  /** Timestamp of the last successful pending-face POST (global cooldown). */
+  const lastPendingSubmitAtRef = useRef<number>(0);
+  /** Recent embeddings we already submitted — small ring buffer for client-side dedup. */
+  const recentPendingEmbeddingsRef = useRef<number[][]>([]);
   const videoCanvasRef = useRef<VideoCanvasHandle | null>(null);
   const wsRef = useRef<WsClient | null>(null);
   const msgCounterRef = useRef<number>(0);
@@ -154,18 +159,28 @@ export function App(): JSX.Element {
         });
 
         // Surface the unknown face to the caretaker-facing pending queue
-        // (PIPELINE §1.6 steps 42–46). We throttle per-frame_id to avoid
-        // spamming the queue while the same face stays in frame.
+        // (PIPELINE §1.6 steps 42–46). Global cooldown + client-side cosine
+        // dedup prevents the same person generating 5-10 entries when the
+        // IoU tracker reassigns frame_ids.
         if (msg.embedding.length === 512) {
           const patientId = getPatientId();
           if (patientId !== null) {
-            const lastSubmitMs =
-              lastPendingSubmitByFrameIdRef.current.get(msg.frame_id) ?? 0;
-            if (now - lastSubmitMs >= PENDING_FACE_THROTTLE_MS) {
+            const sinceLastSubmit = now - lastPendingSubmitAtRef.current;
+            // Client-side cosine dedup: skip if similar to a recent submission.
+            const isDuplicate = recentPendingEmbeddingsRef.current.some((prev) => {
+              let dot = 0;
+              for (let i = 0; i < 512; i++) dot += prev[i] * msg.embedding[i];
+              return dot >= PENDING_FACE_CLIENT_DEDUP_THRESHOLD;
+            });
+            if (sinceLastSubmit >= PENDING_FACE_GLOBAL_COOLDOWN_MS && !isDuplicate) {
               const handle = videoCanvasRef.current;
               const thumb = handle?.cropFaceThumbnailBase64(msg.frame_id) ?? null;
               if (thumb !== null) {
-                lastPendingSubmitByFrameIdRef.current.set(msg.frame_id, now);
+                lastPendingSubmitAtRef.current = now;
+                // Keep a small ring buffer of the last 5 submitted embeddings.
+                const buf = recentPendingEmbeddingsRef.current;
+                buf.push([...msg.embedding]);
+                if (buf.length > 5) buf.shift();
                 const capturedAt = new Date()
                   .toISOString()
                   .replace(/\.\d{3}Z$/, "Z");
@@ -177,21 +192,12 @@ export function App(): JSX.Element {
                   captured_at: capturedAt,
                 })
                   .then((resp) => {
-                    // If the server matched a registered face, drop the
-                    // local UnknownBadge; the next recognize tick will bring
-                    // back a `matched=true` for this face once the cache
-                    // refresh picks it up.
                     if (resp.already_known) {
                       pendingByFrameIdRef.current.delete(frameId);
                       bumpRender();
                     }
-                    // merged / newly-inserted: leave the local pending
-                    // state — caretaker will accept or dismiss in the
-                    // Dashboard.
                   })
                   .catch((err: unknown) => {
-                    // Transient failure: allow the 10 s throttle to
-                    // naturally debounce retries on the next matched=false.
                     console.warn("pending face submit failed:", err);
                   });
               }

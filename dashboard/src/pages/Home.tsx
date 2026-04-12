@@ -47,6 +47,9 @@ export function HomePage(): ReactElement {
     // catches this on re-render once `me` resolves, but navigating eagerly
     // keeps the interaction snappy.
     if (DEV_AUTH_BYPASS) {
+      // Stash the role hint so useMe can auto-register on first 404, matching
+      // the real Auth0 path which sets this in useRealAuth.login.
+      sessionStorage.setItem('pending_role', role);
       auth.login(role);
       navigate(portalPath(role));
       return;

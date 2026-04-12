@@ -21,7 +21,7 @@ from __future__ import annotations
 import sqlite3
 
 from fastapi import APIRouter, Depends, Path, Query, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from app.deps import get_auth, get_db, http_error
 from app.models import (
@@ -209,15 +209,16 @@ def accept_pending(
 @router.delete(
     "/pending-faces/{pending_face_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
 )
 def dismiss_pending(
     pending_face_id: str = Path(...),
     auth: AuthContext = Depends(get_auth),
     db: sqlite3.Connection = Depends(get_db),
-) -> None:
+) -> Response:
     """Dismiss a pending face without naming it (API_SPEC §3b.4)."""
     row = _load_pending_or_404(db, pending_face_id)
     ensure_patient_or_caretaker_of(db, auth, int(row["patient_id"]))
     _check_write_limit(auth.user_id)
     pf_service.delete_pending_face(db, int(row["id"]))
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -33,17 +33,22 @@
   --ink-secondary: #6B6458; /* taupe-grey */
   --ink-inverse: #F4EFE6;
 
-  /* --- Accent family (role-swapped) ------------------------------------- */
-  --accent-patient: #5B7A6A;    /* bottle green-slate — calming */
-  --accent-caretaker: #B8693D;  /* burnt sienna — warmth */
+  /* --- Accent family (green palette) ------------------------------------ */
+  --accent-primary: #097969;     /* persian green — primary CTA / accent */
+  --accent-light: #afe1af;       /* celadon — highlights, badges, hover fills */
+  --accent-mid: #50c878;         /* emerald — interactive hover, active states */
+  --accent-dark: #355e3b;        /* hunter green — dark accents, text on light */
+  --accent-muted: #93c572;       /* pistachio — secondary accents, tags */
+  --accent-patient: #097969;
+  --accent-caretaker: #355e3b;
   --accent: var(--accent-patient);
   --accent-ink: #FBF8F1;
 
   /* --- Signal & structure ---------------------------------------------- */
   --signal-warm: #C6733D;
-  --signal-cool: #5B7A6A;
+  --signal-cool: #097969;
   --rule: #C5BEAE;
-  --focus-ring: #B8693D;
+  --focus-ring: #50c878;
 
   /* --- Type ------------------------------------------------------------ */
   --font-display: 'Fraunces', 'Newsreader', Georgia, serif;
@@ -55,7 +60,7 @@
  * Applied by flipping `body.classList` in the caretaker portal. */
 body.role-caretaker {
   --accent: var(--accent-caretaker);
-  --focus-ring: var(--accent-caretaker);
+  --focus-ring: var(--accent-mid);
 }
 
 html,

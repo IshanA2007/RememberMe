@@ -153,7 +153,7 @@ export const VideoCanvas = forwardRef<VideoCanvasHandle, VideoCanvasProps>(
         const statusMap = statusRef.current;
         const overlays: OverlayBox[] = [];
         const rootStyles = window.getComputedStyle(document.documentElement);
-        const accent = rootStyles.getPropertyValue("--accent").trim() || "#D4A65A";
+        const accent = rootStyles.getPropertyValue("--accent").trim() || "#097969";
         const warm =
           rootStyles.getPropertyValue("--signal-warm").trim() || "#C6733D";
 

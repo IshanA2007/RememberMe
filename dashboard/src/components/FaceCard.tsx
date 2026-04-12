@@ -17,6 +17,8 @@ import type { FaceObject } from '../types/api';
 export interface FaceCardProps {
   face: FaceObject;
   onClick?: () => void;
+  /** When true, shrinks typography for tight tree layouts. */
+  compact?: boolean;
 }
 
 function firstLine(text: string | null | undefined): string {
@@ -26,16 +28,23 @@ function firstLine(text: string | null | undefined): string {
   return nl === -1 ? t : t.slice(0, nl);
 }
 
-export function FaceCard({ face, onClick }: FaceCardProps): ReactElement {
+export function FaceCard({ face, onClick, compact }: FaceCardProps): ReactElement {
+  const nameFontSize = compact ? 16 : 24;
+  const subFontSize = compact ? 12 : 14;
+  const pad = compact ? '8px 10px' : '14px 16px';
+
   const content = (
     <>
       <div
         className="font-display text-ink-primary"
         style={{
-          fontSize: 24,
+          fontSize: nameFontSize,
           fontWeight: 600,
           letterSpacing: '-0.02em',
           lineHeight: 1.1,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {face.name}
@@ -43,12 +52,19 @@ export function FaceCard({ face, onClick }: FaceCardProps): ReactElement {
       {face.title ? (
         <div
           className="font-text text-ink-secondary"
-          style={{ fontSize: 14, marginTop: 4, lineHeight: 1.4 }}
+          style={{
+            fontSize: subFontSize,
+            marginTop: compact ? 2 : 4,
+            lineHeight: 1.4,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
         >
           {face.title}
         </div>
       ) : null}
-      {face.description ? (
+      {!compact && face.description ? (
         <div
           className="font-text text-ink-secondary"
           style={{
@@ -69,10 +85,11 @@ export function FaceCard({ face, onClick }: FaceCardProps): ReactElement {
   const surfaceStyle = {
     border: '1px solid var(--rule)',
     backgroundColor: 'var(--bg-elevated)',
-    padding: '14px 16px',
+    padding: pad,
     borderRadius: 2,
-    minWidth: 180,
-    maxWidth: 220,
+    minWidth: 0,
+    maxWidth: '100%',
+    width: '100%',
     textAlign: 'left' as const,
     color: 'var(--ink-primary)',
   };

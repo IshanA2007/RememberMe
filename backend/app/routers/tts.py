@@ -30,9 +30,10 @@ async def synthesize(
 ) -> StreamingResponse:
     """Synthesize speech for `text` and stream the audio back.
 
-    The proxy service yields MP3 chunks as they arrive from ElevenLabs,
-    keeping TTFB low for the Vision overlay. If the upstream raises we
-    translate to 502 per API_SPEC §7.1.
+    We open the upstream connection and verify the status code BEFORE
+    creating the StreamingResponse. This ensures any UpstreamError
+    surfaces as a proper 502 JSON envelope instead of crashing inside
+    the response body after headers are already sent.
     """
     if not default_limiter.check(make_key(auth.user_id, "tts"), 10, 60.0):
         raise http_error(
@@ -41,18 +42,18 @@ async def synthesize(
             "TTS limited to 10/min per user",
         )
 
+    try:
+        stream = await tts_proxy.open_stream(payload.text, payload.voice_id)
+    except tts_proxy.UpstreamError as exc:
+        raise http_error(
+            status.HTTP_502_BAD_GATEWAY,
+            "UPSTREAM_ERROR",
+            f"ElevenLabs TTS failed: {exc}",
+        ) from exc
+
     async def _streamer():
-        try:
-            async for chunk in tts_proxy.synthesize(payload.text, payload.voice_id):
+        async with stream:
+            async for chunk in stream.chunks():
                 yield chunk
-        except tts_proxy.UpstreamError as exc:
-            # Once the body is opened we can't reset the status code — in
-            # practice the error triggers before any chunk arrives because
-            # synthesize() raises on the initial response.status_code check.
-            raise http_error(
-                status.HTTP_502_BAD_GATEWAY,
-                "UPSTREAM_ERROR",
-                f"ElevenLabs TTS failed: {exc}",
-            ) from exc
 
     return StreamingResponse(_streamer(), media_type="audio/mpeg")
