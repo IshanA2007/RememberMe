@@ -29,6 +29,7 @@ from app.routers import (
     health,
     memories,
     patients,
+    pending_faces,
     reminders,
     stt,
     tts,
@@ -96,6 +97,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api/auth")
 app.include_router(patients.router, prefix="/api/patients")
 app.include_router(faces.router, prefix="/api")
+app.include_router(pending_faces.router, prefix="/api")
 app.include_router(memories.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api/conversations")

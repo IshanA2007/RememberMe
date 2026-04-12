@@ -198,6 +198,78 @@ class FaceEmbeddingRequest(_StrictModel):
 
 
 # ---------------------------------------------------------------------------
+# §3b — Pending faces (unknown recognition queue)
+# ---------------------------------------------------------------------------
+
+
+class PendingFaceCreateRequest(_StrictModel):
+    """`POST /api/patients/{id}/pending-faces` body (API_SPEC §3b.1).
+
+    Validation of the 512-length + finite-floats embedding is done in the
+    service layer so we can produce a shared 422 SEMANTIC_ERROR envelope.
+    """
+
+    embedding: list[float]
+    thumbnail_b64: str = Field(min_length=1)
+    thumbnail_mime: Literal["image/jpeg", "image/png"]
+    captured_at: str
+
+
+class PendingFaceObject(_ResponseModel):
+    """`POST /api/patients/{id}/pending-faces` response (API_SPEC §3b.1).
+
+    `pending_face_id` is null when `already_known=true` (no row created).
+    `face_id` is populated only when `already_known=true`.
+    """
+
+    pending_face_id: str | None = None
+    patient_id: str
+    thumbnail_b64: str
+    thumbnail_mime: Literal["image/jpeg", "image/png"]
+    captured_at: str
+    created_at: str
+    updated_at: str
+    merged: bool
+    already_known: bool
+    face_id: str | None = None
+
+
+class PendingFaceListItem(_ResponseModel):
+    """A single row in `GET /api/patients/{id}/pending-faces` (API_SPEC §3b.2).
+
+    Embeddings are NOT returned on the list view — only on POST.
+    """
+
+    pending_face_id: str
+    patient_id: str
+    thumbnail_b64: str
+    thumbnail_mime: Literal["image/jpeg", "image/png"]
+    captured_at: str
+    created_at: str
+    updated_at: str
+
+
+class PendingFaceListResponse(_ResponseModel):
+    """`GET /api/patients/{id}/pending-faces` 200 body."""
+
+    pending_faces: list[PendingFaceListItem]
+
+
+class PendingFaceAcceptRequest(_StrictModel):
+    """`POST /api/pending-faces/{id}/accept` body (API_SPEC §3b.3)."""
+
+    name: str = Field(min_length=1, max_length=80)
+    title: str | None = Field(default=None, max_length=40)
+    description: str | None = Field(default=None, max_length=500)
+
+
+class PendingFaceAcceptResponse(_ResponseModel):
+    """`POST /api/pending-faces/{id}/accept` 201 body."""
+
+    face: FaceObject
+
+
+# ---------------------------------------------------------------------------
 # §4 — Memories
 # ---------------------------------------------------------------------------
 
