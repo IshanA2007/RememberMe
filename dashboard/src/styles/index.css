@@ -39,6 +39,15 @@
   --on-primary: #ffffff;
   --on-primary-container: #003212;
 
+  /* --- Legacy accent alias -------------------------------------------- */
+  /* Several components were authored against `--accent` / `--signal-warm`
+   * before the final token set was locked. Alias them to the role-aware
+   * primary so those buttons keep filled fills + readable text instead
+   * of falling back to transparent-with-invisible-text. */
+  --accent: var(--primary);
+  --on-accent: var(--on-primary);
+  --signal-warm: var(--error);
+
   /* --- Tertiary accent (soft blue) -------------------------------------- */
   --tertiary: #4c626b;
   --tertiary-fixed: #cee6f1;
