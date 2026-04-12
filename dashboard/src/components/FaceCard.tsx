@@ -3,7 +3,7 @@
  *
  * Used both inside MemoryTree (as the leaf nodes) and potentially on a
  * face-list view. No drop shadow; a 1px --rule border and an inset fill
- * on --bg-elevated carry the "card" silhouette per frontend.mdc §5.3.
+ * on --bg-white carry the "card" silhouette per frontend.mdc §5.3.
  *
  * Typography (plan D2.6 / §9 + FaceCard spec):
  *   - Name:        Fraunces 24px, --ink-primary
@@ -36,7 +36,7 @@ export function FaceCard({ face, onClick, compact }: FaceCardProps): ReactElemen
   const content = (
     <>
       <div
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{
           fontSize: nameFontSize,
           fontWeight: 600,
@@ -51,7 +51,7 @@ export function FaceCard({ face, onClick, compact }: FaceCardProps): ReactElemen
       </div>
       {face.title ? (
         <div
-          className="font-text text-ink-secondary"
+          className="font-body text-tertiary"
           style={{
             fontSize: subFontSize,
             marginTop: compact ? 2 : 4,
@@ -66,7 +66,7 @@ export function FaceCard({ face, onClick, compact }: FaceCardProps): ReactElemen
       ) : null}
       {!compact && face.description ? (
         <div
-          className="font-text text-ink-secondary"
+          className="font-body text-tertiary"
           style={{
             fontSize: 14,
             marginTop: 8,
@@ -83,15 +83,20 @@ export function FaceCard({ face, onClick, compact }: FaceCardProps): ReactElemen
   );
 
   const surfaceStyle = {
-    border: '1px solid var(--rule)',
-    backgroundColor: 'var(--bg-elevated)',
+    border: 'none',
+    backgroundColor: 'white',
     padding: pad,
-    borderRadius: 2,
+    borderRadius: 8,
     minWidth: 0,
     maxWidth: '100%',
     width: '100%',
+    height: '100%',
     textAlign: 'left' as const,
-    color: 'var(--ink-primary)',
+    color: 'var(--on-surface)',
+    boxShadow: '0 2px 12px rgba(0, 109, 48, 0.08)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'center',
   };
 
   if (onClick) {

@@ -49,24 +49,24 @@ export function MemoryRow({
   return (
     <article
       className="group flex flex-col gap-2 py-6"
-      style={{ borderBottom: '1px solid var(--rule)' }}
+      style={{ borderBottom: '1px solid var(--outline-variant)' }}
     >
       <div className="flex items-center gap-3">
         <span
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{ fontSize: 12, letterSpacing: '0.08em' }}
         >
           {formatDateOverline(memory.created_at)}
         </span>
         <span
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{
             fontSize: 11,
             letterSpacing: '0.1em',
-            border: '1px solid var(--rule)',
+            border: '1px solid var(--outline-variant)',
             padding: '2px 6px',
             borderRadius: 2,
-            color: 'var(--ink-secondary)',
+            color: 'var(--tertiary)',
           }}
         >
           {SOURCE_LABEL[memory.source]}
@@ -75,7 +75,7 @@ export function MemoryRow({
 
       <div className="flex items-start justify-between gap-6">
         <p
-          className="font-text text-ink-primary"
+          className="font-body text-on-surface"
           style={{ fontSize: 18, lineHeight: 1.55, margin: 0, maxWidth: '62ch' }}
         >
           {memory.content}
@@ -88,7 +88,7 @@ export function MemoryRow({
             {onEdit ? (
               <button
                 type="button"
-                className="font-text text-ink-secondary"
+                className="font-body text-tertiary"
                 style={{
                   fontSize: 14,
                   padding: '4px 8px',
@@ -105,7 +105,7 @@ export function MemoryRow({
             {onDelete ? (
               <button
                 type="button"
-                className="font-text text-ink-secondary"
+                className="font-body text-tertiary"
                 style={{
                   fontSize: 14,
                   padding: '4px 8px',

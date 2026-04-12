@@ -30,12 +30,12 @@ interface SectionProps {
 function Overline({ children }: { children: string }): ReactElement {
   return (
     <div
-      className="font-mono uppercase text-ink-secondary"
+      className="font-label uppercase text-tertiary"
       style={{
         fontSize: 11,
         letterSpacing: '0.14em',
         padding: '4px 0 12px',
-        borderBottom: '1px solid var(--rule)',
+        borderBottom: '1px solid var(--outline-variant)',
       }}
     >
       {children}
@@ -49,7 +49,7 @@ function Section({ title, empty, isEmpty, children }: SectionProps): ReactElemen
       <Overline>{title}</Overline>
       {isEmpty ? (
         <div
-          className="font-text text-ink-secondary"
+          className="font-body text-tertiary"
           style={{ fontSize: 16, paddingTop: 16 }}
         >
           {empty}
@@ -77,16 +77,16 @@ function RecognizedItem({ face }: { face: ActivityNewlyRecognizedFace }): ReactE
   return (
     <div
       className="flex items-baseline justify-between gap-6 py-3"
-      style={{ borderBottom: '1px solid var(--rule)' }}
+      style={{ borderBottom: '1px solid var(--outline-variant)' }}
     >
       <span
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}
       >
         {face.name}
       </span>
       <span
-        className="font-mono uppercase text-ink-secondary"
+        className="font-label uppercase text-tertiary"
         style={{ fontSize: 11, letterSpacing: '0.1em' }}
       >
         first seen {formatIsoShort(face.first_seen_at)}
@@ -103,24 +103,24 @@ function ConversationItem({
   return (
     <div
       className="flex flex-col gap-1 py-4"
-      style={{ borderBottom: '1px solid var(--rule)' }}
+      style={{ borderBottom: '1px solid var(--outline-variant)' }}
     >
       <div className="flex items-baseline justify-between gap-4">
         <span
-          className="font-display text-ink-primary"
+          className="font-headline text-on-surface"
           style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.015em' }}
         >
           {m.face_name}
         </span>
         <span
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{ fontSize: 11, letterSpacing: '0.1em' }}
         >
           {formatIsoShort(m.created_at)}
         </span>
       </div>
       <p
-        className="font-text text-ink-primary"
+        className="font-body text-on-surface"
         style={{ fontSize: 16, lineHeight: 1.55, margin: 0, maxWidth: '62ch' }}
       >
         {m.content}
@@ -133,16 +133,16 @@ function ReminderItem({ r }: { r: QuickInfoUpcomingReminder }): ReactElement {
   return (
     <div
       className="flex items-baseline justify-between gap-6 py-3"
-      style={{ borderBottom: '1px solid var(--rule)' }}
+      style={{ borderBottom: '1px solid var(--outline-variant)' }}
     >
       <span
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.015em' }}
       >
         {r.title}
       </span>
       <span
-        className="font-mono uppercase text-ink-secondary"
+        className="font-label uppercase text-tertiary"
         style={{ fontSize: 11, letterSpacing: '0.1em' }}
       >
         {formatIsoShort(r.trigger_at)}

@@ -93,8 +93,11 @@ export function MemoryTree({
   const count = faces.length;
 
   // Adaptive node sizing: shrink cards as count grows.
-  const nodeW = count <= 4 ? 180 : count <= 8 ? 150 : 120;
-  const nodeH = count <= 4 ? 80 : count <= 8 ? 68 : 56;
+  // Heights must accommodate FaceCard content (name + title + description +
+  // padding). Non-compact cards render all three rows at 24/14/14px; compact
+  // cards drop the description and shrink type, so they need much less room.
+  const nodeW = count <= 4 ? 220 : count <= 8 ? 170 : 140;
+  const nodeH = count <= 4 ? 124 : count <= 8 ? 72 : 60;
 
   // Compute a minimum radius that prevents overlap. Each node subtends
   // an arc; spacing them requires circumference ≥ count * (nodeW + gap).
@@ -151,7 +154,18 @@ export function MemoryTree({
         style={{ display: 'block' }}
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Radial connecting lines — edge-to-edge. */}
+        <defs>
+          <filter id="centerShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.08" />
+          </filter>
+        </defs>
+        {/* Radial connecting lines — edge-to-edge with gradient. */}
+        <defs>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
         {nodes.map((n) => {
           // Line from center node edge → outer node edge.
           const from = rectEdgePoint(
@@ -170,8 +184,9 @@ export function MemoryTree({
               y1={from.y}
               x2={to.x}
               y2={to.y}
-              stroke="var(--rule)"
-              strokeWidth={1}
+              stroke="var(--primary)"
+              strokeWidth={1.5}
+              opacity={0.3}
             />
           );
         })}
@@ -183,22 +198,23 @@ export function MemoryTree({
             y={centerRy}
             width={centerW}
             height={centerH}
-            fill="var(--bg-elevated)"
-            stroke="var(--accent)"
-            strokeWidth={1}
-            rx={2}
-            ry={2}
+            fill="white"
+            stroke="var(--primary)"
+            strokeWidth={2}
+            rx={8}
+            ry={8}
+            filter="url(#centerShadow)"
           />
           <text
             x={vcx}
             y={vcy + 8}
             textAnchor="middle"
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-headline)',
               fontSize: 28,
               fontWeight: 600,
               letterSpacing: '-0.02em',
-              fill: 'var(--ink-primary)',
+              fill: 'var(--on-surface)',
             }}
           >
             {centerName}
@@ -218,7 +234,7 @@ export function MemoryTree({
               <FaceCard
                 face={n.face}
                 onClick={() => onFaceClick(n.face)}
-                compact={nodeW < 160}
+                compact={nodeW < 200}
               />
             </div>
           </foreignObject>

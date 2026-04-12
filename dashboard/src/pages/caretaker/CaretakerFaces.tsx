@@ -104,12 +104,12 @@ export function CaretakerFacesPage(): ReactElement {
           className="flex items-center justify-between"
           style={{
             paddingBottom: 12,
-            borderBottom: '1px solid var(--rule)',
+            borderBottom: '1px solid var(--outline-variant)',
             marginBottom: 24,
           }}
         >
           <span
-            className="font-mono uppercase text-ink-secondary"
+            className="font-label uppercase text-tertiary"
             style={{ fontSize: 11, letterSpacing: '0.14em' }}
           >
             Caretaker · {patientName} · People
@@ -118,15 +118,15 @@ export function CaretakerFacesPage(): ReactElement {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="font-display"
+              className="font-headline"
               style={{
                 fontSize: 24,
                 fontWeight: 600,
                 letterSpacing: '-0.02em',
                 padding: '10px 18px',
-                border: '1px solid var(--ink-primary)',
+                border: '1px solid var(--on-surface)',
                 background: 'transparent',
-                color: 'var(--ink-primary)',
+                color: 'var(--on-surface)',
                 cursor: 'pointer',
                 borderRadius: 2,
                 lineHeight: 1,
@@ -143,12 +143,12 @@ export function CaretakerFacesPage(): ReactElement {
           <section
             style={{
               padding: '12px 0 28px',
-              borderBottom: '1px solid var(--rule)',
+              borderBottom: '1px solid var(--outline-variant)',
               marginBottom: 24,
             }}
           >
             <div
-              className="font-mono uppercase text-ink-secondary"
+              className="font-label uppercase text-tertiary"
               style={{ fontSize: 11, letterSpacing: '0.14em', paddingBottom: 10 }}
             >
               New person
@@ -159,16 +159,16 @@ export function CaretakerFacesPage(): ReactElement {
                 value={newName}
                 onChange={(e) => setNewName(e.target.value.slice(0, NAME_MAX))}
                 placeholder="Name (required)"
-                className="font-display text-ink-primary"
+                className="font-headline text-on-surface"
                 style={{
                   fontSize: 28,
                   fontWeight: 600,
                   letterSpacing: '-0.02em',
-                  border: '1px solid var(--rule)',
-                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--outline-variant)',
+                  background: 'var(--bg-surface-container-lowest)',
                   padding: '10px 12px',
                   borderRadius: 2,
-                  color: 'var(--ink-primary)',
+                  color: 'var(--on-surface)',
                 }}
                 aria-label="Name"
               />
@@ -177,14 +177,14 @@ export function CaretakerFacesPage(): ReactElement {
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value.slice(0, TITLE_MAX))}
                 placeholder="Title (e.g. daughter, doctor)"
-                className="font-text text-ink-secondary"
+                className="font-body text-tertiary"
                 style={{
                   fontSize: 18,
-                  border: '1px solid var(--rule)',
-                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--outline-variant)',
+                  background: 'var(--bg-surface-container-lowest)',
                   padding: '10px 12px',
                   borderRadius: 2,
-                  color: 'var(--ink-secondary)',
+                  color: 'var(--tertiary)',
                 }}
                 aria-label="Title"
               />
@@ -194,16 +194,16 @@ export function CaretakerFacesPage(): ReactElement {
                   setNewDescription(e.target.value.slice(0, DESCRIPTION_MAX))
                 }
                 placeholder="Description (optional)"
-                className="font-text text-ink-primary"
+                className="font-body text-on-surface"
                 style={{
                   fontSize: 16,
                   lineHeight: 1.55,
-                  border: '1px solid var(--rule)',
-                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--outline-variant)',
+                  background: 'var(--bg-surface-container-lowest)',
                   padding: '10px 12px',
                   borderRadius: 2,
                   minHeight: 80,
-                  color: 'var(--ink-primary)',
+                  color: 'var(--on-surface)',
                   resize: 'vertical',
                 }}
                 aria-label="Description"
@@ -217,12 +217,12 @@ export function CaretakerFacesPage(): ReactElement {
                     setNewTitle('');
                     setNewDescription('');
                   }}
-                  className="font-display uppercase text-ink-secondary"
+                  className="font-headline uppercase text-tertiary"
                   style={{
                     fontSize: 12,
                     letterSpacing: '0.12em',
                     padding: '6px 12px',
-                    border: '1px solid var(--rule)',
+                    border: '1px solid var(--outline-variant)',
                     background: 'transparent',
                     cursor: 'pointer',
                     borderRadius: 2,
@@ -234,14 +234,14 @@ export function CaretakerFacesPage(): ReactElement {
                   type="button"
                   onClick={() => createMut.mutate()}
                   disabled={createMut.isPending || !newName.trim()}
-                  className="font-display uppercase"
+                  className="font-headline uppercase"
                   style={{
                     fontSize: 12,
                     letterSpacing: '0.12em',
                     padding: '6px 12px',
                     border: '1px solid var(--accent)',
                     backgroundColor: 'var(--accent)',
-                    color: 'var(--accent-ink)',
+                    color: 'var(--on-primary)',
                     cursor: createMut.isPending ? 'not-allowed' : 'pointer',
                     borderRadius: 2,
                     opacity: createMut.isPending ? 0.6 : 1,
@@ -256,14 +256,14 @@ export function CaretakerFacesPage(): ReactElement {
 
         {facesQuery.isLoading ? (
           <p
-            className="font-text text-ink-secondary"
+            className="font-body text-tertiary"
             style={{ fontSize: 16, padding: '24px 0' }}
           >
             Loading…
           </p>
         ) : faces.length === 0 ? (
           <p
-            className="font-text text-ink-secondary"
+            className="font-body text-tertiary"
             style={{ fontSize: 18, padding: '48px 0', maxWidth: '62ch' }}
           >
             No people registered yet. Use “Add person” above to pre-register
@@ -292,19 +292,19 @@ export function CaretakerFacesPage(): ReactElement {
       <div
         className="flex items-center justify-between"
         style={{
-          borderTop: '1px solid var(--rule)',
+          borderTop: '1px solid var(--outline-variant)',
           padding: '16px 40px',
         }}
       >
         <button
           type="button"
           onClick={() => navigate(`/caretaker/${patient_id}`)}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,
@@ -315,12 +315,12 @@ export function CaretakerFacesPage(): ReactElement {
         <button
           type="button"
           onClick={() => auth.logout()}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,

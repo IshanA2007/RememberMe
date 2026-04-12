@@ -29,17 +29,17 @@ function Field({ label, value }: FieldProps): ReactElement {
       className="flex flex-col"
       style={{
         padding: '18px 0',
-        borderBottom: '1px solid var(--rule)',
+        borderBottom: '1px solid var(--outline-variant)',
       }}
     >
       <span
-        className="font-mono uppercase text-ink-secondary"
+        className="font-label uppercase text-tertiary"
         style={{ fontSize: 11, letterSpacing: '0.14em' }}
       >
         {label}
       </span>
       <span
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{
           fontSize: 22,
           fontWeight: 600,
@@ -75,12 +75,12 @@ export function PatientSettingsPage(): ReactElement {
         style={{ padding: '40px 40px 16px', maxWidth: 720 }}
       >
         <div
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{
             fontSize: 11,
             letterSpacing: '0.14em',
             paddingBottom: 10,
-            borderBottom: '1px solid var(--rule)',
+            borderBottom: '1px solid var(--outline-variant)',
           }}
         >
           Profile
@@ -96,7 +96,7 @@ export function PatientSettingsPage(): ReactElement {
               href={tenantUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-text text-ink-primary"
+              className="font-body text-on-surface"
               style={{
                 fontSize: 16,
                 textDecoration: 'underline',
@@ -113,19 +113,19 @@ export function PatientSettingsPage(): ReactElement {
       <div
         className="flex items-center justify-between"
         style={{
-          borderTop: '1px solid var(--rule)',
+          borderTop: '1px solid var(--outline-variant)',
           padding: '16px 40px',
         }}
       >
         <button
           type="button"
           onClick={() => navigate('/patient')}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,
@@ -136,12 +136,12 @@ export function PatientSettingsPage(): ReactElement {
         <button
           type="button"
           onClick={() => auth.logout()}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,

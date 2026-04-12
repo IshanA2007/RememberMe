@@ -1,12 +1,12 @@
 /**
- * PatientSelector — caretaker-only list of assigned patients.
+ * PatientSelector — caregiver patient card list.
  *
- * NOT a native <select>. Rendered as a designed list where each row is a
- * button: Fraunces 24px name with a JetBrains Mono assignment timestamp
- * underneath. A 1px --rule hairline separates rows.
+ * Displays each assigned patient as an interactive card with name,
+ * assignment date, and hover effects.
  */
 
 import type { ReactElement } from 'react';
+import { ChevronRight } from 'lucide-react';
 import type { PatientDirectoryEntry } from '../types/api';
 
 export interface PatientSelectorProps {
@@ -36,8 +36,8 @@ export function PatientSelector({
   if (patients.length === 0) {
     return (
       <div
-        className="font-text text-ink-secondary"
-        style={{ fontSize: 16, padding: '24px 0' }}
+        className="text-tertiary text-center py-8"
+        style={{ fontSize: 16 }}
       >
         No patients assigned yet.
       </div>
@@ -45,41 +45,63 @@ export function PatientSelector({
   }
 
   return (
-    <ul
-      className="flex flex-col"
-      style={{ borderTop: '1px solid var(--rule)', listStyle: 'none', padding: 0, margin: 0 }}
-    >
-      {patients.map((p) => (
-        <li key={p.patient_id} style={{ borderBottom: '1px solid var(--rule)' }}>
-          <button
-            type="button"
-            onClick={() => onSelect(p.patient_id)}
-            className="flex w-full items-baseline justify-between py-5"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--ink-primary)',
-              textAlign: 'left',
-              padding: '20px 4px',
-            }}
-            aria-label={`Open ${p.display_name}`}
-          >
-            <span
-              className="font-display text-ink-primary"
-              style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em' }}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {patients.map((p, idx) => (
+        <button
+          key={p.patient_id}
+          type="button"
+          onClick={() => onSelect(p.patient_id)}
+          className="group p-6 rounded-2xl transition-all duration-300 text-left border-none cursor-pointer"
+          style={{
+            background: 'var(--surface-container-low)',
+            color: 'var(--on-surface)',
+            animation: `slideUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)`,
+            animationDelay: `${0.15 + idx * 0.1}s`,
+            animationFillMode: 'both',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.12)';
+            e.currentTarget.style.background = 'white';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = 'var(--surface-container-low)';
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3
+              className="font-headline font-bold"
+              style={{
+                fontSize: 18,
+                margin: 0,
+                letterSpacing: '-0.01em',
+              }}
             >
               {p.display_name}
-            </span>
-            <span
-              className="font-mono uppercase text-ink-secondary"
-              style={{ fontSize: 12, letterSpacing: '0.1em' }}
-            >
-              {relative(p.assigned_at)}
-            </span>
-          </button>
-        </li>
+            </h3>
+            <ChevronRight
+              size={20}
+              style={{
+                opacity: 0,
+                transition: 'all 0.3s',
+                transform: 'translateX(-8px)',
+              }}
+              className="group-hover:opacity-100 group-hover:translate-x-0"
+            />
+          </div>
+          <p
+            className="text-tertiary text-xs uppercase tracking-widest font-label"
+            style={{
+              margin: 0,
+              letterSpacing: '0.1em',
+            }}
+          >
+            {relative(p.assigned_at)}
+          </p>
+        </button>
       ))}
-    </ul>
+    </div>
   );
 }

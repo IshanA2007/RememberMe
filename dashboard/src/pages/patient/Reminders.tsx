@@ -115,11 +115,11 @@ function InlineReminderForm({
       style={{
         gap: 10,
         padding: '16px 0 20px',
-        borderBottom: '1px solid var(--rule)',
+        borderBottom: '1px solid var(--outline-variant)',
       }}
     >
       <div
-        className="font-mono uppercase text-ink-secondary"
+        className="font-label uppercase text-tertiary"
         style={{ fontSize: 11, letterSpacing: '0.14em' }}
       >
         {label}
@@ -131,16 +131,16 @@ function InlineReminderForm({
           onChange({ ...values, title: e.target.value.slice(0, TITLE_MAX) })
         }
         placeholder="Title"
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{
           fontSize: 20,
           fontWeight: 600,
           letterSpacing: '-0.015em',
-          border: '1px solid var(--rule)',
-          background: 'var(--bg-sunken)',
+          border: '1px solid var(--outline-variant)',
+          background: 'var(--bg-surface-container-lowest)',
           padding: '10px 12px',
           borderRadius: 2,
-          color: 'var(--ink-primary)',
+          color: 'var(--on-surface)',
         }}
         aria-label="Reminder title"
       />
@@ -153,16 +153,16 @@ function InlineReminderForm({
           })
         }
         placeholder="Description (optional)"
-        className="font-text text-ink-primary"
+        className="font-body text-on-surface"
         style={{
           fontSize: 16,
           lineHeight: 1.5,
-          border: '1px solid var(--rule)',
-          background: 'var(--bg-sunken)',
+          border: '1px solid var(--outline-variant)',
+          background: 'var(--bg-surface-container-lowest)',
           padding: '10px 12px',
           borderRadius: 2,
           minHeight: 72,
-          color: 'var(--ink-primary)',
+          color: 'var(--on-surface)',
           resize: 'vertical',
         }}
         aria-label="Reminder description"
@@ -171,14 +171,14 @@ function InlineReminderForm({
         type="datetime-local"
         value={values.trigger_at}
         onChange={(e) => onChange({ ...values, trigger_at: e.target.value })}
-        className="font-mono text-ink-primary"
+        className="font-label text-on-surface"
         style={{
           fontSize: 14,
-          border: '1px solid var(--rule)',
-          background: 'var(--bg-sunken)',
+          border: '1px solid var(--outline-variant)',
+          background: 'var(--bg-surface-container-lowest)',
           padding: '8px 10px',
           borderRadius: 2,
-          color: 'var(--ink-primary)',
+          color: 'var(--on-surface)',
         }}
         aria-label="Trigger time"
       />
@@ -186,12 +186,12 @@ function InlineReminderForm({
         <button
           type="button"
           onClick={onCancel}
-          className="font-display uppercase text-ink-secondary"
+          className="font-headline uppercase text-tertiary"
           style={{
             fontSize: 12,
             letterSpacing: '0.12em',
             padding: '6px 12px',
-            border: '1px solid var(--rule)',
+            border: '1px solid var(--outline-variant)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,
@@ -203,14 +203,14 @@ function InlineReminderForm({
           type="button"
           onClick={onSubmit}
           disabled={submitting || !values.title.trim() || !values.trigger_at}
-          className="font-display uppercase"
+          className="font-headline uppercase"
           style={{
             fontSize: 12,
             letterSpacing: '0.12em',
             padding: '6px 12px',
             border: '1px solid var(--accent)',
             backgroundColor: 'var(--accent)',
-            color: 'var(--accent-ink)',
+            color: 'var(--on-primary)',
             cursor: submitting ? 'not-allowed' : 'pointer',
             borderRadius: 2,
             opacity: submitting ? 0.6 : 1,
@@ -344,18 +344,18 @@ export function PatientRemindersPage(): ReactElement {
         {/* TODAY banner */}
         <section style={{ paddingBottom: 32 }}>
           <div
-            className="font-mono uppercase text-ink-secondary"
+            className="font-label uppercase text-tertiary"
             style={{
               fontSize: 11,
               letterSpacing: '0.14em',
               paddingBottom: 10,
-              borderBottom: '1px solid var(--rule)',
+              borderBottom: '1px solid var(--outline-variant)',
             }}
           >
             Today
           </div>
           <h2
-            className="font-display text-ink-primary"
+            className="font-headline text-on-surface"
             style={{
               fontSize: 48,
               fontWeight: 600,
@@ -381,12 +381,12 @@ export function PatientRemindersPage(): ReactElement {
         {/* 7-day calendar */}
         <section style={{ paddingBottom: 32 }}>
           <div
-            className="font-mono uppercase text-ink-secondary"
+            className="font-label uppercase text-tertiary"
             style={{
               fontSize: 11,
               letterSpacing: '0.14em',
               paddingBottom: 12,
-              borderBottom: '1px solid var(--rule)',
+              borderBottom: '1px solid var(--outline-variant)',
               marginBottom: 12,
             }}
           >
@@ -402,12 +402,12 @@ export function PatientRemindersPage(): ReactElement {
         {/* Selected day reminders */}
         <section style={{ paddingBottom: 24 }}>
           <div
-            className="font-mono uppercase text-ink-secondary"
+            className="font-label uppercase text-tertiary"
             style={{
               fontSize: 11,
               letterSpacing: '0.14em',
               paddingBottom: 10,
-              borderBottom: '1px solid var(--rule)',
+              borderBottom: '1px solid var(--outline-variant)',
               marginBottom: 4,
             }}
           >
@@ -451,7 +451,7 @@ export function PatientRemindersPage(): ReactElement {
       <div
         className="flex items-center justify-between"
         style={{
-          borderTop: '1px solid var(--rule)',
+          borderTop: '1px solid var(--outline-variant)',
           padding: '16px 40px',
           gap: 16,
         }}
@@ -459,12 +459,12 @@ export function PatientRemindersPage(): ReactElement {
         <button
           type="button"
           onClick={() => navigate('/patient')}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,
@@ -478,14 +478,14 @@ export function PatientRemindersPage(): ReactElement {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="font-display uppercase"
+              className="font-headline uppercase"
               style={{
                 fontSize: 14,
                 letterSpacing: '0.14em',
                 padding: '10px 16px',
                 border: '1px solid var(--accent)',
                 backgroundColor: 'var(--accent)',
-                color: 'var(--accent-ink)',
+                color: 'var(--on-primary)',
                 cursor: 'pointer',
                 borderRadius: 2,
               }}
@@ -496,12 +496,12 @@ export function PatientRemindersPage(): ReactElement {
           <button
             type="button"
             onClick={() => setEditMode((v) => !v)}
-            className="font-display uppercase text-ink-primary"
+            className="font-headline uppercase text-on-surface"
             style={{
               fontSize: 14,
               letterSpacing: '0.14em',
               padding: '10px 16px',
-              border: '1px solid var(--ink-primary)',
+              border: '1px solid var(--on-surface)',
               background: 'transparent',
               cursor: 'pointer',
               borderRadius: 2,
@@ -514,12 +514,12 @@ export function PatientRemindersPage(): ReactElement {
         <button
           type="button"
           onClick={() => auth.logout()}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,

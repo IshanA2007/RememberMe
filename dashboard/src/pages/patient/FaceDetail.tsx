@@ -182,7 +182,7 @@ export function PatientFaceDetailPage(): ReactElement {
         <button
           type="button"
           onClick={() => navigate('/patient/faces')}
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{
             fontSize: 11,
             letterSpacing: '0.14em',
@@ -199,7 +199,7 @@ export function PatientFaceDetailPage(): ReactElement {
         {/* Face header block */}
         {!face ? (
           <p
-            className="font-text text-ink-secondary"
+            className="font-body text-tertiary"
             style={{ fontSize: 16, padding: '24px 0' }}
           >
             {facesQuery.isLoading ? 'Loading…' : 'Person not found.'}
@@ -212,17 +212,17 @@ export function PatientFaceDetailPage(): ReactElement {
                   type="text"
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
-                  className="font-display text-ink-primary"
+                  className="font-headline text-on-surface"
                   style={{
                     fontSize: 48,
                     fontWeight: 600,
                     letterSpacing: '-0.03em',
                     lineHeight: 1.05,
-                    border: '1px solid var(--rule)',
-                    background: 'var(--bg-sunken)',
+                    border: '1px solid var(--outline-variant)',
+                    background: 'var(--bg-surface-container-lowest)',
                     padding: '8px 12px',
                     borderRadius: 2,
-                    color: 'var(--ink-primary)',
+                    color: 'var(--on-surface)',
                   }}
                   aria-label="Name"
                   maxLength={80}
@@ -232,14 +232,14 @@ export function PatientFaceDetailPage(): ReactElement {
                   value={draftTitle}
                   onChange={(e) => setDraftTitle(e.target.value)}
                   placeholder="title (e.g. daughter)"
-                  className="font-text text-ink-secondary"
+                  className="font-body text-tertiary"
                   style={{
                     fontSize: 24,
-                    border: '1px solid var(--rule)',
-                    background: 'var(--bg-sunken)',
+                    border: '1px solid var(--outline-variant)',
+                    background: 'var(--bg-surface-container-lowest)',
                     padding: '8px 12px',
                     borderRadius: 2,
-                    color: 'var(--ink-secondary)',
+                    color: 'var(--tertiary)',
                   }}
                   aria-label="Title"
                   maxLength={40}
@@ -248,16 +248,16 @@ export function PatientFaceDetailPage(): ReactElement {
                   value={draftDescription}
                   onChange={(e) => setDraftDescription(e.target.value)}
                   placeholder="description"
-                  className="font-text text-ink-primary"
+                  className="font-body text-on-surface"
                   style={{
                     fontSize: 18,
                     lineHeight: 1.5,
-                    border: '1px solid var(--rule)',
-                    background: 'var(--bg-sunken)',
+                    border: '1px solid var(--outline-variant)',
+                    background: 'var(--bg-surface-container-lowest)',
                     padding: '10px 12px',
                     borderRadius: 2,
                     minHeight: 80,
-                    color: 'var(--ink-primary)',
+                    color: 'var(--on-surface)',
                     resize: 'vertical',
                   }}
                   aria-label="Description"
@@ -267,7 +267,7 @@ export function PatientFaceDetailPage(): ReactElement {
             ) : (
               <>
                 <h2
-                  className="font-display text-ink-primary"
+                  className="font-headline text-on-surface"
                   style={{
                     fontSize: 48,
                     fontWeight: 600,
@@ -280,7 +280,7 @@ export function PatientFaceDetailPage(): ReactElement {
                 </h2>
                 {face.title ? (
                   <p
-                    className="font-text text-ink-secondary"
+                    className="font-body text-tertiary"
                     style={{
                       fontSize: 24,
                       lineHeight: 1.35,
@@ -292,7 +292,7 @@ export function PatientFaceDetailPage(): ReactElement {
                 ) : null}
                 {face.description ? (
                   <p
-                    className="font-text text-ink-primary"
+                    className="font-body text-on-surface"
                     style={{
                       fontSize: 18,
                       lineHeight: 1.55,
@@ -314,11 +314,11 @@ export function PatientFaceDetailPage(): ReactElement {
             className="flex items-center justify-between"
             style={{
               paddingBottom: 10,
-              borderBottom: '1px solid var(--rule)',
+              borderBottom: '1px solid var(--outline-variant)',
             }}
           >
             <span
-              className="font-mono uppercase text-ink-secondary"
+              className="font-label uppercase text-tertiary"
               style={{ fontSize: 11, letterSpacing: '0.14em' }}
             >
               Memories
@@ -327,12 +327,12 @@ export function PatientFaceDetailPage(): ReactElement {
               <button
                 type="button"
                 onClick={() => setAddingMemory(true)}
-                className="font-display uppercase text-ink-primary"
+                className="font-headline uppercase text-on-surface"
                 style={{
                   fontSize: 12,
                   letterSpacing: '0.12em',
                   padding: '6px 12px',
-                  border: '1px solid var(--ink-primary)',
+                  border: '1px solid var(--on-surface)',
                   background: 'transparent',
                   cursor: 'pointer',
                   borderRadius: 2,
@@ -349,30 +349,30 @@ export function PatientFaceDetailPage(): ReactElement {
               style={{
                 gap: 10,
                 padding: '16px 0 20px',
-                borderBottom: '1px solid var(--rule)',
+                borderBottom: '1px solid var(--outline-variant)',
               }}
             >
               <textarea
                 value={newMemoryContent}
                 onChange={(e) => setNewMemoryContent(e.target.value.slice(0, MEMORY_MAX))}
                 placeholder="A short note to remember…"
-                className="font-text text-ink-primary"
+                className="font-body text-on-surface"
                 style={{
                   fontSize: 18,
                   lineHeight: 1.55,
-                  border: '1px solid var(--rule)',
-                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--outline-variant)',
+                  background: 'var(--bg-surface-container-lowest)',
                   padding: '10px 12px',
                   borderRadius: 2,
                   minHeight: 96,
-                  color: 'var(--ink-primary)',
+                  color: 'var(--on-surface)',
                   resize: 'vertical',
                 }}
                 aria-label="New memory content"
               />
               <div className="flex items-center justify-between">
                 <span
-                  className="font-mono text-ink-secondary"
+                  className="font-label text-tertiary"
                   style={{ fontSize: 11, letterSpacing: '0.08em' }}
                 >
                   {newMemoryContent.length} / {MEMORY_MAX}
@@ -384,12 +384,12 @@ export function PatientFaceDetailPage(): ReactElement {
                       setAddingMemory(false);
                       setNewMemoryContent('');
                     }}
-                    className="font-display uppercase text-ink-secondary"
+                    className="font-headline uppercase text-tertiary"
                     style={{
                       fontSize: 12,
                       letterSpacing: '0.12em',
                       padding: '6px 12px',
-                      border: '1px solid var(--rule)',
+                      border: '1px solid var(--outline-variant)',
                       background: 'transparent',
                       cursor: 'pointer',
                       borderRadius: 2,
@@ -401,14 +401,14 @@ export function PatientFaceDetailPage(): ReactElement {
                     type="button"
                     onClick={() => createMemoryMut.mutate()}
                     disabled={createMemoryMut.isPending || !newMemoryContent.trim()}
-                    className="font-display uppercase"
+                    className="font-headline uppercase"
                     style={{
                       fontSize: 12,
                       letterSpacing: '0.12em',
                       padding: '6px 12px',
                       border: '1px solid var(--accent)',
                       backgroundColor: 'var(--accent)',
-                      color: 'var(--accent-ink)',
+                      color: 'var(--on-primary)',
                       cursor: createMemoryMut.isPending ? 'not-allowed' : 'pointer',
                       borderRadius: 2,
                       opacity: createMemoryMut.isPending ? 0.6 : 1,
@@ -428,11 +428,11 @@ export function PatientFaceDetailPage(): ReactElement {
               style={{
                 gap: 10,
                 padding: '16px 0 20px',
-                borderBottom: '1px solid var(--rule)',
+                borderBottom: '1px solid var(--outline-variant)',
               }}
             >
               <div
-                className="font-mono uppercase text-ink-secondary"
+                className="font-label uppercase text-tertiary"
                 style={{ fontSize: 11, letterSpacing: '0.12em' }}
               >
                 Editing memory
@@ -442,23 +442,23 @@ export function PatientFaceDetailPage(): ReactElement {
                 onChange={(e) =>
                   setEditingMemoryContent(e.target.value.slice(0, MEMORY_MAX))
                 }
-                className="font-text text-ink-primary"
+                className="font-body text-on-surface"
                 style={{
                   fontSize: 18,
                   lineHeight: 1.55,
-                  border: '1px solid var(--rule)',
-                  background: 'var(--bg-sunken)',
+                  border: '1px solid var(--outline-variant)',
+                  background: 'var(--bg-surface-container-lowest)',
                   padding: '10px 12px',
                   borderRadius: 2,
                   minHeight: 96,
-                  color: 'var(--ink-primary)',
+                  color: 'var(--on-surface)',
                   resize: 'vertical',
                 }}
                 aria-label="Edit memory content"
               />
               <div className="flex items-center justify-between">
                 <span
-                  className="font-mono text-ink-secondary"
+                  className="font-label text-tertiary"
                   style={{ fontSize: 11, letterSpacing: '0.08em' }}
                 >
                   {editingMemoryContent.length} / {MEMORY_MAX}
@@ -470,12 +470,12 @@ export function PatientFaceDetailPage(): ReactElement {
                       setEditingMemoryId(null);
                       setEditingMemoryContent('');
                     }}
-                    className="font-display uppercase text-ink-secondary"
+                    className="font-headline uppercase text-tertiary"
                     style={{
                       fontSize: 12,
                       letterSpacing: '0.12em',
                       padding: '6px 12px',
-                      border: '1px solid var(--rule)',
+                      border: '1px solid var(--outline-variant)',
                       background: 'transparent',
                       cursor: 'pointer',
                       borderRadius: 2,
@@ -489,14 +489,14 @@ export function PatientFaceDetailPage(): ReactElement {
                     disabled={
                       updateMemoryMut.isPending || !editingMemoryContent.trim()
                     }
-                    className="font-display uppercase"
+                    className="font-headline uppercase"
                     style={{
                       fontSize: 12,
                       letterSpacing: '0.12em',
                       padding: '6px 12px',
                       border: '1px solid var(--accent)',
                       backgroundColor: 'var(--accent)',
-                      color: 'var(--accent-ink)',
+                      color: 'var(--on-primary)',
                       cursor: updateMemoryMut.isPending ? 'not-allowed' : 'pointer',
                       borderRadius: 2,
                       opacity: updateMemoryMut.isPending ? 0.6 : 1,
@@ -531,19 +531,19 @@ export function PatientFaceDetailPage(): ReactElement {
       <div
         className="flex items-center justify-between"
         style={{
-          borderTop: '1px solid var(--rule)',
+          borderTop: '1px solid var(--outline-variant)',
           padding: '16px 40px',
         }}
       >
         <button
           type="button"
           onClick={() => navigate('/patient')}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,
@@ -554,12 +554,12 @@ export function PatientFaceDetailPage(): ReactElement {
         <button
           type="button"
           onClick={() => auth.logout()}
-          className="font-display uppercase text-ink-primary"
+          className="font-headline uppercase text-on-surface"
           style={{
             fontSize: 14,
             letterSpacing: '0.14em',
             padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
+            border: '1px solid var(--on-surface)',
             background: 'transparent',
             cursor: 'pointer',
             borderRadius: 2,

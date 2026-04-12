@@ -81,20 +81,20 @@ export function CalendarGrid({
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--ink-primary)',
+              color: 'var(--on-surface)',
               borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
             }}
             aria-pressed={isActive}
             aria-label={`${dow} ${dayNum}, ${count} reminder${count === 1 ? '' : 's'}`}
           >
             <span
-              className="font-mono uppercase text-ink-secondary"
+              className="font-label uppercase text-tertiary"
               style={{ fontSize: 12, letterSpacing: '0.1em' }}
             >
               {dow}
             </span>
             <span
-              className="font-display text-ink-primary"
+              className="font-headline text-on-surface"
               style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1 }}
             >
               {dayNum}
@@ -119,7 +119,7 @@ export function CalendarGrid({
               ))}
               {count > MAX_DOTS ? (
                 <span
-                  className="font-mono text-ink-secondary"
+                  className="font-label text-tertiary"
                   style={{ fontSize: 11, marginLeft: 4 }}
                 >
                   +{count - MAX_DOTS}

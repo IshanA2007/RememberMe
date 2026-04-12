@@ -1,20 +1,11 @@
 /**
- * Home — portal selector (FRONTEND_SPEC §2.5, frontend.mdc §6.4).
+ * Home — portal selector landing with glassmorphism card and organic backdrop.
  *
- * First impression of the product: a layered cream→parchment vertical wash
- * carries warmth, a subtle noise overlay lives on body::before, and the two
- * portal zones feel like distinct editorial moments rather than twin buttons.
- *
- * Behavior:
- *   - If already authenticated, redirect to the role's portal.
- *   - Click "Patient Portal":
- *       * dev bypass: login('patient') + navigate('/patient')
- *       * real Auth0: login('patient') (redirects away)
- *   - Same for Caregiver Portal.
- *
- * Typography:
- *   - App lockup top-left: Fraunces 40px title + Newsreader 16px tagline.
- *   - Footer: JetBrains Mono 11px, --ink-secondary.
+ * Design:
+ *   - Full-bleed radial gradient background (soft greens)
+ *   - Centered glassmorphism card with PortalHomeCard
+ *   - Animated organic blobs floating behind
+ *   - Subtle footer with branding
  */
 
 import { useEffect, type ReactElement } from 'react';
@@ -43,19 +34,12 @@ export function HomePage(): ReactElement {
   }, [me, navigate]);
 
   const handlePortalClick = (role: Role): void => {
-    // Dev bypass: synchronous; then navigate. The `useMe` effect above also
-    // catches this on re-render once `me` resolves, but navigating eagerly
-    // keeps the interaction snappy.
     if (DEV_AUTH_BYPASS) {
-      // Stash the role hint so useMe can auto-register on first 404, matching
-      // the real Auth0 path which sets this in useRealAuth.login.
       sessionStorage.setItem('pending_role', role);
       auth.login(role);
       navigate(portalPath(role));
       return;
     }
-    // Real Auth0: stash hint + redirect. AuthProvider.login handles the
-    // `loginWithRedirect({ appState: { target } })` contract.
     auth.login(role);
   };
 
@@ -63,73 +47,87 @@ export function HomePage(): ReactElement {
     <div
       className="relative flex min-h-full w-full flex-col"
       style={{
-        // Layered vertical wash: --bg-sunken at the top settling into
-        // --bg-base lower, evoking parchment lit from above.
-        backgroundImage:
-          'linear-gradient(180deg, var(--bg-sunken) 0%, var(--bg-base) 55%, var(--bg-base) 100%)',
+        background:
+          'radial-gradient(circle at 10% 20%, #f0fdf4 0%, transparent 40%), ' +
+          'radial-gradient(circle at 90% 80%, #dcfce7 0%, transparent 40%), ' +
+          'radial-gradient(circle at 50% 50%, #effaf3 0%, transparent 100%), ' +
+          '#f7fdf9',
       }}
     >
-      {/* App lockup — top-left editorial masthead */}
+      {/* Animated organic blobs behind card */}
       <div
-        className="flex flex-col"
-        style={{ padding: '48px 64px 0 64px' }}
+        className="fixed inset-0 pointer-events-none overflow-hidden z-0"
+        style={{
+          opacity: 0.4,
+        }}
       >
-        <span
-          className="font-display text-ink-primary"
+        <div
           style={{
-            fontSize: 40,
-            fontWeight: 600,
-            letterSpacing: '-0.03em',
-            lineHeight: 1,
+            position: 'absolute',
+            top: '-200px',
+            left: '-200px',
+            width: '500px',
+            height: '500px',
+            background: 'rgba(0, 109, 48, 0.1)',
+            borderRadius: '50%',
+            filter: 'blur(80px)',
+            animation: 'drift 20s ease-in-out infinite alternate',
           }}
-        >
-          RememberMe
-        </span>
-        <span
-          className="font-text text-ink-secondary"
+        />
+        <div
           style={{
-            fontSize: 16,
-            lineHeight: 1.5,
-            marginTop: 8,
-            maxWidth: 420,
+            position: 'absolute',
+            bottom: '-150px',
+            right: '-150px',
+            width: '400px',
+            height: '400px',
+            background: 'rgba(206, 230, 241, 0.15)',
+            borderRadius: '50%',
+            filter: 'blur(80px)',
+            animation: 'drift 25s ease-in-out infinite alternate',
+            animationDelay: '-5s',
           }}
-        >
-          Memory support, gently.
-        </span>
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '300px',
+            height: '300px',
+            background: 'rgba(0, 168, 77, 0.08)',
+            borderRadius: '50%',
+            filter: 'blur(80px)',
+            animation: 'drift 30s ease-in-out infinite alternate',
+            animationDelay: '-10s',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
       </div>
 
-      {/* Centered portal picker */}
+      {/* Main content */}
       <main
-        className="flex flex-1 items-center justify-center"
-        style={{ padding: '48px 64px' }}
+        className="flex flex-1 items-center justify-center relative z-10"
+        style={{ padding: '48px 24px' }}
       >
-        <div style={{ width: '100%', maxWidth: 1120 }}>
-          <PortalHomeCard
-            onPatientClick={() => handlePortalClick('patient')}
-            onCaretakerClick={() => handlePortalClick('caretaker')}
-          />
-        </div>
+        <PortalHomeCard
+          onPatientClick={() => handlePortalClick('patient')}
+          onCaretakerClick={() => handlePortalClick('caretaker')}
+        />
       </main>
 
-      {/* Footer — hairline + tiny version/license in mono */}
+      {/* Footer — small branding */}
       <footer
-        className="flex items-center justify-between"
+        className="relative z-10 flex items-center justify-center"
         style={{
-          borderTop: '1px solid var(--rule)',
-          padding: '16px 64px',
+          padding: '24px 24px 32px',
         }}
       >
         <span
-          className="font-mono uppercase text-ink-secondary"
-          style={{ fontSize: 11, letterSpacing: '0.14em' }}
+          className="font-label uppercase text-primary/40 text-center"
+          style={{ fontSize: 10, letterSpacing: '0.15em' }}
         >
-          v0.1.0 · hackathon build
-        </span>
-        <span
-          className="font-mono uppercase text-ink-secondary"
-          style={{ fontSize: 11, letterSpacing: '0.14em' }}
-        >
-          assistive software · built with care
+          © 2024 RememberMe Clinical Sanctuary. All rights reserved.
         </span>
       </footer>
     </div>

@@ -39,18 +39,18 @@ export function ReminderRow({ reminder, onEdit, onDelete }: ReminderRowProps): R
         gridTemplateColumns: '96px 1fr auto',
         gap: 24,
         alignItems: 'start',
-        borderBottom: '1px solid var(--rule)',
+        borderBottom: '1px solid var(--outline-variant)',
       }}
     >
       <div className="flex flex-col">
         <span
-          className="font-mono text-ink-primary"
+          className="font-label text-on-surface"
           style={{ fontSize: 18, letterSpacing: '0.04em', fontWeight: 500 }}
         >
           {line1}
         </span>
         <span
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{ fontSize: 11, letterSpacing: '0.1em', marginTop: 2 }}
         >
           {line2}
@@ -59,7 +59,7 @@ export function ReminderRow({ reminder, onEdit, onDelete }: ReminderRowProps): R
 
       <div className="flex flex-col">
         <h3
-          className="font-display text-ink-primary"
+          className="font-headline text-on-surface"
           style={{
             fontSize: 20,
             fontWeight: 600,
@@ -72,7 +72,7 @@ export function ReminderRow({ reminder, onEdit, onDelete }: ReminderRowProps): R
         </h3>
         {reminder.description ? (
           <p
-            className="font-text text-ink-secondary"
+            className="font-body text-tertiary"
             style={{ fontSize: 16, lineHeight: 1.5, marginTop: 6, maxWidth: '62ch' }}
           >
             {reminder.description}
@@ -85,7 +85,7 @@ export function ReminderRow({ reminder, onEdit, onDelete }: ReminderRowProps): R
           {onEdit ? (
             <button
               type="button"
-              className="font-text text-ink-secondary"
+              className="font-body text-tertiary"
               style={{
                 fontSize: 14,
                 padding: '4px 8px',
@@ -102,7 +102,7 @@ export function ReminderRow({ reminder, onEdit, onDelete }: ReminderRowProps): R
           {onDelete ? (
             <button
               type="button"
-              className="font-text text-ink-secondary"
+              className="font-body text-tertiary"
               style={{
                 fontSize: 14,
                 padding: '4px 8px',

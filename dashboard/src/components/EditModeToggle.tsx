@@ -47,12 +47,12 @@ export function EditModeToggle({
           <button
             type="button"
             onClick={onCancel}
-            className="font-display text-ink-secondary"
+            className="font-headline text-tertiary"
             style={{
               ...BASE_BUTTON_STYLE,
-              border: '1px solid var(--rule)',
+              border: '1px solid var(--outline-variant)',
               background: 'transparent',
-              color: 'var(--ink-secondary)',
+              color: 'var(--tertiary)',
             }}
           >
             Cancel
@@ -62,12 +62,12 @@ export function EditModeToggle({
           <button
             type="button"
             onClick={onSave}
-            className="font-display"
+            className="font-headline"
             style={{
               ...BASE_BUTTON_STYLE,
               border: '1px solid var(--accent)',
               backgroundColor: 'var(--accent)',
-              color: 'var(--accent-ink)',
+              color: 'var(--on-primary)',
             }}
           >
             Save
@@ -85,12 +85,12 @@ export function EditModeToggle({
       <button
         type="button"
         onClick={onToggle}
-        className="font-display text-ink-primary"
+        className="font-headline text-on-surface"
         style={{
           ...BASE_BUTTON_STYLE,
-          border: '1px solid var(--ink-primary)',
+          border: '1px solid var(--on-surface)',
           background: 'transparent',
-          color: 'var(--ink-primary)',
+          color: 'var(--on-surface)',
         }}
       >
         {toggleLabel}

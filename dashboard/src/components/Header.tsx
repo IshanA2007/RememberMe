@@ -1,16 +1,14 @@
 /**
- * Header — role-pilled identity band.
- *
- * Not a card. A band. 1px bottom rule on --rule, no shadow.
+ * Header — fixed glassmorphism top bar with brand lockup and role pill.
  *
  * Layout:
- *   [  ROLE-PILL   ] [            name + description            ]
+ *   [  RememberMe + ROLE-PILL  ] [ spacer ] [ user name ]
  *
- * Typography (plan D2.6):
- *   - Pill:        Fraunces 14px tracking-wide uppercase, 1px --accent border,
- *                  6x10 padding, 4px radius, no fill.
- *   - Name:        Fraunces 32px, --ink-primary, letter-spacing -0.02em.
- *   - Description: Newsreader 16px, --ink-secondary.
+ * Design:
+ *   - Fixed top bar, glassmorphism backdrop, soft shadow
+ *   - Brand: Plus Jakarta Sans 24px bold
+ *   - Role pill: filled primary-container bg, white text, rounded-full
+ *   - User greeting: Plus Jakarta Sans 16px, tertiary muted tone
  */
 
 import type { ReactElement } from 'react';
@@ -24,50 +22,55 @@ export interface HeaderProps {
 
 const ROLE_LABEL: Record<Role, string> = {
   patient: 'PATIENT',
-  caretaker: 'CARETAKER',
+  caretaker: 'CAREGIVER',
 };
 
 export function Header({ role, name, description }: HeaderProps): ReactElement {
   return (
     <header
-      className="relative flex items-center gap-8 px-10 py-6"
-      style={{ borderBottom: '1px solid var(--rule)' }}
+      className="fixed top-0 w-full z-50 flex items-center justify-between px-6 py-4"
+      style={{
+        background: 'rgba(245, 250, 250, 0.8)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+        animation: 'slideUpFromTop 0.5s ease-out',
+      }}
     >
-      <span
-        className="font-display uppercase"
-        style={{
-          fontSize: 14,
-          letterSpacing: '0.14em',
-          fontWeight: 600,
-          padding: '6px 10px',
-          border: '1px solid var(--accent)',
-          color: 'var(--accent)',
-          borderRadius: 4,
-          lineHeight: 1,
-          whiteSpace: 'nowrap',
-        }}
-        aria-label={`Role: ${ROLE_LABEL[role]}`}
-      >
-        {ROLE_LABEL[role]}
-      </span>
-
-      <div className="flex-1 flex flex-col justify-center" style={{ minHeight: 48 }}>
-        <h1
-          className="font-display text-ink-primary"
+      {/* Left: Brand + Role Pill */}
+      <div className="flex items-center gap-4">
+        <span
+          className="font-headline text-primary font-bold tracking-tight"
+          style={{ fontSize: 24 }}
+        >
+          RememberMe
+        </span>
+        <span
+          className="font-headline uppercase font-bold text-on-primary px-3 py-1 rounded-full"
           style={{
-            fontSize: 32,
-            fontWeight: 600,
-            lineHeight: 1.05,
-            letterSpacing: '-0.02em',
-            margin: 0,
+            fontSize: 11,
+            letterSpacing: '0.14em',
+            backgroundColor: 'var(--primary-container)',
+            whiteSpace: 'nowrap',
           }}
+          aria-label={`Role: ${ROLE_LABEL[role]}`}
+        >
+          {ROLE_LABEL[role]}
+        </span>
+      </div>
+
+      {/* Right: User name + optional description */}
+      <div className="flex flex-col items-end justify-center">
+        <p
+          className="font-headline text-on-surface font-semibold"
+          style={{ fontSize: 16, margin: 0 }}
         >
           {name}
-        </h1>
+        </p>
         {description ? (
           <p
-            className="font-text text-ink-secondary"
-            style={{ fontSize: 16, lineHeight: 1.5, marginTop: 4 }}
+            className="text-tertiary"
+            style={{ fontSize: 14, margin: 0, marginTop: 2 }}
           >
             {description}
           </p>

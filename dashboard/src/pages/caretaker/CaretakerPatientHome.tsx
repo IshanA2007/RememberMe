@@ -1,16 +1,14 @@
 /**
- * CaretakerPatientHome — `/caretaker/:patient_id` (FRONTEND_SPEC §2.4).
+ * CaretakerPatientHome — `/caretaker/:patient_id` patient detail view.
  *
- * ActivityFeed is the hero (three editorial sections: newly recognized
- * faces, recent conversation memories, upcoming reminders). Below:
- * two large links to Manage People / Manage Reminders.
- *
- * Running head reads "CARETAKER · {display_name}" per frontend.mdc §6.3.
+ * Shows activity feed and management actions for a specific patient.
+ * Uses sidebar layout matching the caretaker portal design.
  */
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, type ReactElement } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Users, Bell, LayoutDashboard, Settings, LogOut, ChevronLeft } from 'lucide-react';
 
 import { ActivityFeed } from '../../components/ActivityFeed';
 import { Header } from '../../components/Header';
@@ -24,46 +22,82 @@ import type {
   PatientDirectoryResponse,
 } from '../../types/api';
 
-interface IslandLinkProps {
-  title: string;
-  tagline: string;
+interface NavItemProps {
+  label: string;
+  icon: ReactElement;
   onClick: () => void;
-  align: 'left' | 'right';
+  isActive?: boolean;
 }
 
-function IslandLink({ title, tagline, onClick, align }: IslandLinkProps): ReactElement {
-  const alignClass = align === 'left' ? 'items-start text-left' : 'items-end text-right';
+function NavItem({ label, icon, onClick, isActive }: NavItemProps): ReactElement {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col justify-center gap-4 ${alignClass}`}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
       style={{
-        background: 'transparent',
+        background: isActive ? 'var(--primary)' : 'transparent',
+        color: isActive ? 'white' : 'var(--tertiary)',
         border: 'none',
         cursor: 'pointer',
-        color: 'var(--ink-primary)',
-        padding: '40px 16px',
-        minHeight: 200,
+        fontSize: 14,
+        fontFamily: 'var(--font-headline)',
+        fontWeight: isActive ? 600 : 500,
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.background = 'var(--surface-container-low)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.background = 'transparent';
+        }
       }}
     >
-      <span
-        className="font-display"
-        style={{
-          fontSize: 48,
-          fontWeight: 600,
-          letterSpacing: '-0.03em',
-          lineHeight: 0.98,
-        }}
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+interface ActionCardProps {
+  title: string;
+  description: string;
+  icon: ReactElement;
+  onClick: () => void;
+}
+
+function ActionCard({ title, description, icon, onClick }: ActionCardProps): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full p-6 rounded-2xl transition-all duration-300 border-none cursor-pointer text-left"
+      style={{
+        background: 'var(--surface-container-low)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.12)';
+        e.currentTarget.style.background = 'white';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.background = 'var(--surface-container-low)';
+      }}
+    >
+      <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
+      <h3
+        className="font-headline font-bold mb-1 text-on-surface"
+        style={{ fontSize: 16, margin: 0 }}
       >
         {title}
-      </span>
-      <span
-        className="font-text text-ink-secondary"
-        style={{ fontSize: 16, lineHeight: 1.5, maxWidth: 360 }}
-      >
-        {tagline}
-      </span>
+      </h3>
+      <p style={{ fontSize: 14, margin: 0, color: 'var(--tertiary)' }}>
+        {description}
+      </p>
     </button>
   );
 }
@@ -98,129 +132,214 @@ export function CaretakerPatientHomePage(): ReactElement {
   const patientName = patient?.display_name ?? 'Patient';
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="min-h-full flex flex-col">
       <Header
         role="caretaker"
         name={patientName}
-        description={`Caretaker view · ${me.display_name}`}
+        description={me.display_name}
       />
 
-      <main
-        className="flex-1"
-        style={{ padding: '40px 40px 16px' }}
-      >
-        <div
-          className="font-mono uppercase text-ink-secondary"
+      <div className="flex flex-1 pt-20">
+        {/* Left Sidebar Navigation */}
+        <aside
+          className="hidden md:flex fixed left-0 top-0 h-screen w-64 flex-col p-4 z-40 mt-20"
           style={{
-            fontSize: 11,
-            letterSpacing: '0.14em',
-            paddingBottom: 10,
-            borderBottom: '1px solid var(--rule)',
-            marginBottom: 24,
+            background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface-container-low) 100%)',
+            borderRight: '1px solid var(--outline-variant)',
           }}
         >
-          Caretaker · {patientName}
-        </div>
-
-        {activityQuery.isLoading ? (
-          <p
-            className="font-text text-ink-secondary"
-            style={{ fontSize: 16, padding: '24px 0' }}
-          >
-            Loading…
-          </p>
-        ) : activityQuery.data ? (
-          <ActivityFeed activity={activityQuery.data} />
-        ) : (
-          <p
-            className="font-text text-ink-secondary"
-            style={{ fontSize: 16, padding: '24px 0' }}
-          >
-            Could not load activity for this patient.
-          </p>
-        )}
-
-        {/* Two asymmetric management links */}
-        <section style={{ paddingTop: 32 }}>
+          {/* Back button + Patient name */}
           <div
-            className="font-mono uppercase text-ink-secondary"
+            className="mb-8 px-4 pb-6"
             style={{
-              fontSize: 11,
-              letterSpacing: '0.14em',
-              paddingBottom: 10,
-              borderBottom: '1px solid var(--rule)',
-              marginBottom: 8,
+              borderBottom: '1px solid var(--outline-variant)',
             }}
           >
-            Manage
+            <button
+              type="button"
+              onClick={() => navigate('/caretaker')}
+              className="flex items-center gap-2 text-primary hover:opacity-70 transition-opacity font-headline font-semibold mb-3 bg-none border-none cursor-pointer p-0"
+              style={{ fontSize: 14 }}
+            >
+              <ChevronLeft size={20} />
+              Back
+            </button>
+            <h2
+              className="font-headline text-on-surface font-bold"
+              style={{ fontSize: 16, margin: 0 }}
+            >
+              {patientName}
+            </h2>
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr',
-              borderBottom: '1px solid var(--rule)',
-            }}
-          >
-            <IslandLink
-              title="Manage People"
-              tagline="Add, edit, and correct the faces in this patient's life."
+
+          {/* Nav items */}
+          <nav className="flex flex-col gap-2 flex-1">
+            <NavItem
+              label="Activity"
+              icon={<LayoutDashboard size={20} />}
+              isActive={true}
+              onClick={() => {}}
+            />
+            <NavItem
+              label="People"
+              icon={<Users size={20} />}
               onClick={() => navigate(`/caretaker/${patient_id}/faces`)}
-              align="left"
             />
-            <div
-              aria-hidden
-              style={{ height: 1, backgroundColor: 'var(--rule)' }}
-            />
-            <IslandLink
-              title="Manage Reminders"
-              tagline="Schedule appointments, medication, and daily cues."
+            <NavItem
+              label="Reminders"
+              icon={<Bell size={20} />}
               onClick={() => navigate(`/caretaker/${patient_id}/reminders`)}
-              align="right"
             />
-          </div>
-        </section>
-      </main>
+            <NavItem
+              label="Settings"
+              icon={<Settings size={20} />}
+              onClick={() => navigate(`/caretaker/${patient_id}/settings`)}
+            />
+          </nav>
 
-      <div
-        className="flex items-center justify-between"
+          {/* Logout button */}
+          <button
+            type="button"
+            onClick={() => auth.logout()}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+            style={{
+              background: 'transparent',
+              color: 'var(--tertiary)',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontFamily: 'var(--font-headline)',
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--error-container)';
+              e.currentTarget.style.color = 'var(--error)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--tertiary)';
+            }}
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 md:ml-64 p-6 md:p-8">
+          <div className="max-w-4xl mx-auto">
+            {/* Hero header */}
+            <header className="mb-8">
+              <h1
+                className="font-headline font-extrabold text-on-surface tracking-tight mb-2"
+                style={{ fontSize: 36 }}
+              >
+                {patientName}'s Activity
+              </h1>
+              <p className="text-tertiary text-lg">Recent recognitions, conversations, and reminders.</p>
+            </header>
+
+            {/* Activity Feed */}
+            {activityQuery.isLoading ? (
+              <div
+                className="rounded-[2rem] p-8 text-center"
+                style={{
+                  background: 'var(--surface-container-low)',
+                  color: 'var(--tertiary)',
+                }}
+              >
+                Loading activity...
+              </div>
+            ) : activityQuery.data ? (
+              <ActivityFeed activity={activityQuery.data} />
+            ) : (
+              <div
+                className="rounded-[2rem] p-8 text-center"
+                style={{
+                  background: 'var(--surface-container-low)',
+                  color: 'var(--tertiary)',
+                }}
+              >
+                Could not load activity for this patient.
+              </div>
+            )}
+
+            {/* Management Actions */}
+            <section className="mt-12">
+              <h2
+                className="font-headline font-bold text-on-surface mb-6"
+                style={{ fontSize: 20 }}
+              >
+                Manage Patient
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ActionCard
+                  title="Manage People"
+                  description="Add, edit, and correct faces in this patient's life."
+                  icon={<Users size={24} />}
+                  onClick={() => navigate(`/caretaker/${patient_id}/faces`)}
+                />
+                <ActionCard
+                  title="Manage Reminders"
+                  description="Schedule medications, appointments, and daily cues."
+                  icon={<Bell size={24} />}
+                  onClick={() => navigate(`/caretaker/${patient_id}/reminders`)}
+                />
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+
+      {/* Bottom mobile nav */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-6 py-4"
         style={{
-          borderTop: '1px solid var(--rule)',
-          padding: '16px 40px',
+          background: 'rgba(245, 250, 250, 0.9)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid var(--outline-variant)',
         }}
       >
         <button
           type="button"
           onClick={() => navigate('/caretaker')}
-          className="font-display uppercase text-ink-primary"
+          className="flex flex-col items-center gap-1"
           style={{
-            fontSize: 14,
-            letterSpacing: '0.14em',
-            padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
             background: 'transparent',
+            color: 'var(--tertiary)',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '8px',
             cursor: 'pointer',
-            borderRadius: 2,
+            fontSize: 12,
+            fontFamily: 'var(--font-headline)',
+            fontWeight: 600,
           }}
         >
-          Patients
+          <ChevronLeft size={20} />
+          Back
         </button>
         <button
           type="button"
           onClick={() => auth.logout()}
-          className="font-display uppercase text-ink-primary"
+          className="flex flex-col items-center gap-1"
           style={{
-            fontSize: 14,
-            letterSpacing: '0.14em',
-            padding: '10px 16px',
-            border: '1px solid var(--ink-primary)',
             background: 'transparent',
+            color: 'var(--tertiary)',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '8px',
             cursor: 'pointer',
-            borderRadius: 2,
+            fontSize: 12,
+            fontFamily: 'var(--font-headline)',
+            fontWeight: 600,
           }}
         >
+          <LogOut size={20} />
           Logout
         </button>
-      </div>
+      </nav>
     </div>
   );
 }

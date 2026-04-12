@@ -70,7 +70,7 @@ export function PendingFacesSection({
     <section
       style={{
         paddingBottom: 28,
-        borderBottom: '1px solid var(--rule)',
+        borderBottom: '1px solid var(--outline-variant)',
         marginBottom: 28,
       }}
     >
@@ -79,13 +79,13 @@ export function PendingFacesSection({
         style={{ gap: 10, marginBottom: 16 }}
       >
         <span
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{ fontSize: 11, letterSpacing: '0.14em' }}
         >
           Faces awaiting names
         </span>
         <span
-          className="font-mono text-ink-secondary"
+          className="font-label text-tertiary"
           style={{ fontSize: 11, letterSpacing: '0.08em' }}
         >
           ({pendingFaces.length})
@@ -102,7 +102,7 @@ export function PendingFacesSection({
             <div
               key={pendingFaceId}
               style={{
-                borderTop: i === 0 ? 'none' : '1px solid var(--rule)',
+                borderTop: i === 0 ? 'none' : '1px solid var(--outline-variant)',
                 paddingTop: i === 0 ? 0 : 16,
                 paddingBottom: i === pendingFaces.length - 1 ? 0 : 16,
               }}

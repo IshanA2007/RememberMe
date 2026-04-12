@@ -1,66 +1,78 @@
 /* ---------------------------------------------------------------------------
- * RememberMe Dashboard — root stylesheet
+ * RememberMe Dashboard — root stylesheet (Clinical Sanctuary theme)
  *
- * Authoritative tokens: docs/superpowers/plans/2026-04-12-rememberme-full-build.md §0.2
- * Typography rules:     .cursor/rules/frontend.mdc §1
- * Depth & texture:      .cursor/rules/frontend.mdc §3
- *
- * No banned fonts, no generic gradients, no rounded-2xl reflex.
+ * Editorial healthcare design system with glassmorphism, organic animations,
+ * and surface-layered tonal architecture. No borders (except focus outlines),
+ * no grain overlay — depth via color shifts and blur.
  * ------------------------------------------------------------------------- */
 
-/* Font sources — display (Fraunces), text (Newsreader), mono (JetBrains Mono). */
-@import '@fontsource/fraunces/400.css';
-@import '@fontsource/fraunces/600.css';
-@import '@fontsource/fraunces/700.css';
-@import '@fontsource/newsreader/400.css';
-@import '@fontsource/newsreader/500.css';
-@import '@fontsource/newsreader/600.css';
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
+/* Font sources — headline (Plus Jakarta Sans), body (Inter) */
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/inter/300.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* --- Surface neutrals (aged cream family) ------------------------------ */
-  --bg-base: #F4EFE6;       /* aged cream */
-  --bg-elevated: #FBF8F1;   /* card fill */
-  --bg-sunken: #EAE3D4;     /* inset / input */
+  /* --- Surface layers (Clinical Sanctuary) ------------------------------ */
+  --surface: #f5fafa;                     /* base background */
+  --surface-container-low: #eff5f4;       /* subtle inset */
+  --surface-container: #e9efef;           /* standard card */
+  --surface-container-highest: #dee4e3;   /* prominent lift */
 
-  /* --- Ink -------------------------------------------------------------- */
-  --ink-primary: #1A1816;   /* deep ink */
-  --ink-secondary: #6B6458; /* taupe-grey */
-  --ink-inverse: #F4EFE6;
+  /* --- Text colors (on-surface) ----------------------------------------- */
+  --on-surface: #171d1d;                  /* primary text */
+  --on-surface-variant: #3d4a3d;          /* muted text */
+  --tertiary: #4c626b;                    /* secondary text (old --ink-secondary) */
 
-  /* --- Accent family (green palette) ------------------------------------ */
-  --accent-primary: #097969;     /* persian green — primary CTA / accent */
-  --accent-light: #afe1af;       /* celadon — highlights, badges, hover fills */
-  --accent-mid: #50c878;         /* emerald — interactive hover, active states */
-  --accent-dark: #355e3b;        /* hunter green — dark accents, text on light */
-  --accent-muted: #93c572;       /* pistachio — secondary accents, tags */
-  --accent-patient: #097969;
-  --accent-caretaker: #355e3b;
-  --accent: var(--accent-patient);
-  --accent-ink: #FBF8F1;
+  /* --- Primary accent (deep teal) --------------------------------------- */
+  --primary: #006d30;
+  --primary-container: #00a84d;
+  --on-primary: #ffffff;
+  --on-primary-container: #003212;
 
-  /* --- Signal & structure ---------------------------------------------- */
-  --signal-warm: #C6733D;
-  --signal-cool: #097969;
-  --rule: #C5BEAE;
+  /* --- Tertiary accent (soft blue) -------------------------------------- */
+  --tertiary: #4c626b;
+  --tertiary-fixed: #cee6f1;
+  --on-tertiary-fixed: #061e26;
+  --on-tertiary-fixed-variant: #344a53;
+  --tertiary-fixed-dim: #b3cad5;
+
+  /* --- Secondary (muted teal) ------------------------------------------- */
+  --secondary: #46645e;
+  --secondary-container: #c8eae1;
+  --on-secondary-container: #4c6a64;
+  --on-secondary-fixed: #00201c;
+  --secondary-fixed: #c8eae1;
+
+  /* --- Signal / status -------------------------------------------------- */
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+
+  /* --- Interactive & structure ------------------------------------------ */
+  --outline-variant: #bccaba;
+  --outline: #6d7b6c;
   --focus-ring: #50c878;
 
-  /* --- Type ------------------------------------------------------------ */
-  --font-display: 'Fraunces', 'Newsreader', Georgia, serif;
-  --font-text: 'Newsreader', 'Fraunces', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* --- Type families ---------------------------------------------------- */
+  --font-headline: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-label: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Caretaker role override: swap accent to burnt sienna.
+/* Caretaker role override: use hunter green tones instead of teal.
  * Applied by flipping `body.classList` in the caretaker portal. */
 body.role-caretaker {
-  --accent: var(--accent-caretaker);
-  --focus-ring: var(--accent-mid);
+  --primary: #355e3b;
+  --primary-container: #4a7c59;
 }
 
 html,
@@ -71,33 +83,89 @@ body,
 
 body {
   position: relative;
-  background-color: var(--bg-base);
-  color: var(--ink-primary);
-  font-family: var(--font-text);
-  font-size: 16px; /* dashboard primary copy ≥16 px per frontend.mdc §1.4 */
-  line-height: 1.55;
+  background-color: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/* Subtle SVG grain overlay — 4% opacity, fixed, non-interactive.
- * Built from feTurbulence noise, base neutral color. Dropped over the
- * whole body per frontend.mdc §3.1 (texture instead of flat white). */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.04;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10 0 0 0 0 0.09 0 0 0 0 0.08 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 240px 240px;
 }
 
 #root {
   position: relative;
   z-index: 1;
+}
+
+/* Glassmorphism utility — floating surfaces with blur */
+.glass-panel {
+  background: rgba(245, 250, 250, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Entrance animations — smooth introductions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUpFromTop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Organic blob drift — subtle continuous motion */
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(30px, -20px) scale(1.1);
+  }
+}
+
+/* Utility classes for animations */
+.animate-slide-up {
+  animation: slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* Focus ring — considered, consistent, never the browser default. */

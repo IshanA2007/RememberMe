@@ -28,7 +28,7 @@ export function ReminderList({
   if (sorted.length === 0) {
     return (
       <div
-        className="font-text text-ink-secondary"
+        className="font-body text-tertiary"
         style={{ fontSize: 16, padding: '24px 0' }}
       >
         No reminders scheduled.
@@ -39,7 +39,7 @@ export function ReminderList({
   return (
     <div
       className="flex flex-col"
-      style={{ borderTop: '1px solid var(--rule)' }}
+      style={{ borderTop: '1px solid var(--outline-variant)' }}
     >
       {sorted.map((r) => (
         <ReminderRow key={r.reminder_id} reminder={r} onEdit={onEdit} onDelete={onDelete} />

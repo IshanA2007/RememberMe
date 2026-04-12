@@ -2,7 +2,7 @@
  * PendingFaceCard — one unnamed face captured by Vision, awaiting a name.
  *
  * Editorial row with thumbnail left, inline naming form center, action
- * buttons right. No drop shadow; a 1px --rule border, inset --bg-elevated
+ * buttons right. No drop shadow; a 1px --rule border, inset --bg-white
  * fill, and asymmetric spacing carry the silhouette per frontend.mdc §5.3.
  *
  * Typography (frontend.mdc §1):
@@ -76,8 +76,8 @@ export function PendingFaceCard({
       style={{
         gap: 24,
         padding: '20px 18px 22px',
-        border: '1px solid var(--rule)',
-        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--outline-variant)',
+        backgroundColor: 'var(--bg-white)',
         borderRadius: 2,
       }}
     >
@@ -87,10 +87,10 @@ export function PendingFaceCard({
           width: 96,
           height: 96,
           flexShrink: 0,
-          border: '2px solid var(--rule)',
+          border: '2px solid var(--outline-variant)',
           borderRadius: 2,
           overflow: 'hidden',
-          backgroundColor: 'var(--bg-sunken)',
+          backgroundColor: 'var(--bg-surface-container-lowest)',
         }}
       >
         <img
@@ -108,7 +108,7 @@ export function PendingFaceCard({
       {/* Inline form — name hero, relationship + description below. */}
       <div className="flex flex-1 flex-col" style={{ gap: 8, minWidth: 0 }}>
         <div
-          className="font-mono uppercase text-ink-secondary"
+          className="font-label uppercase text-tertiary"
           style={{
             fontSize: 11,
             letterSpacing: '0.14em',
@@ -123,16 +123,16 @@ export function PendingFaceCard({
           onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
           placeholder="Name (required)"
           disabled={busy}
-          className="font-display text-ink-primary"
+          className="font-headline text-on-surface"
           style={{
             fontSize: 18,
             fontWeight: 600,
             letterSpacing: '-0.01em',
-            border: '1px solid var(--rule)',
-            background: 'var(--bg-sunken)',
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--bg-surface-container-lowest)',
             padding: '8px 10px',
             borderRadius: 2,
-            color: 'var(--ink-primary)',
+            color: 'var(--on-surface)',
           }}
           aria-label="Name"
           maxLength={NAME_MAX}
@@ -144,14 +144,14 @@ export function PendingFaceCard({
           onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
           placeholder="Relationship (e.g. daughter, friend)"
           disabled={busy}
-          className="font-text text-ink-primary"
+          className="font-body text-on-surface"
           style={{
             fontSize: 16,
-            border: '1px solid var(--rule)',
-            background: 'var(--bg-sunken)',
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--bg-surface-container-lowest)',
             padding: '8px 10px',
             borderRadius: 2,
-            color: 'var(--ink-primary)',
+            color: 'var(--on-surface)',
           }}
           aria-label="Relationship"
           maxLength={TITLE_MAX}
@@ -163,15 +163,15 @@ export function PendingFaceCard({
           placeholder="Description (optional)"
           disabled={busy}
           rows={2}
-          className="font-text text-ink-primary"
+          className="font-body text-on-surface"
           style={{
             fontSize: 14,
             lineHeight: 1.55,
-            border: '1px solid var(--rule)',
-            background: 'var(--bg-sunken)',
+            border: '1px solid var(--outline-variant)',
+            background: 'var(--bg-surface-container-lowest)',
             padding: '8px 10px',
             borderRadius: 2,
-            color: 'var(--ink-primary)',
+            color: 'var(--on-surface)',
             resize: 'vertical',
           }}
           aria-label="Description"
@@ -188,7 +188,7 @@ export function PendingFaceCard({
           type="button"
           onClick={handleAccept}
           disabled={!canSave}
-          className="font-display"
+          className="font-headline"
           style={{
             fontSize: 16,
             fontWeight: 600,
@@ -196,7 +196,7 @@ export function PendingFaceCard({
             padding: '10px 18px',
             border: '1px solid var(--accent)',
             backgroundColor: 'var(--accent)',
-            color: 'var(--accent-ink)',
+            color: 'var(--on-primary)',
             cursor: canSave ? 'pointer' : 'not-allowed',
             borderRadius: 2,
             lineHeight: 1.1,
@@ -209,15 +209,15 @@ export function PendingFaceCard({
           type="button"
           onClick={onDismiss}
           disabled={busy}
-          className="font-display text-ink-secondary"
+          className="font-headline text-tertiary"
           style={{
             fontSize: 16,
             fontWeight: 400,
             letterSpacing: '-0.01em',
             padding: '10px 18px',
-            border: '1px solid var(--ink-secondary)',
+            border: '1px solid var(--tertiary)',
             backgroundColor: 'transparent',
-            color: 'var(--ink-secondary)',
+            color: 'var(--tertiary)',
             cursor: busy ? 'not-allowed' : 'pointer',
             borderRadius: 2,
             lineHeight: 1.1,

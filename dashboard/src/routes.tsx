@@ -49,7 +49,7 @@ function CenteredLoading(): ReactElement {
   return (
     <div className="flex h-full w-full items-center justify-center">
       <p
-        className="font-display text-ink-secondary"
+        className="font-headline text-tertiary"
         style={{ fontSize: 28, letterSpacing: '-0.02em' }}
       >
         Loading…
