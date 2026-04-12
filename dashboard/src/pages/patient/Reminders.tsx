@@ -362,14 +362,16 @@ export function PatientRemindersPage(): ReactElement {
                 onClick={() => setAdding(true)}
                 className="font-headline uppercase"
                 style={{
-                  fontSize: 12,
-                  letterSpacing: '0.12em',
-                  padding: '8px 14px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  padding: '12px 22px',
                   border: '1px solid var(--accent)',
                   backgroundColor: 'var(--accent)',
                   color: 'var(--on-primary)',
                   cursor: 'pointer',
-                  borderRadius: 2,
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                 }}
                 aria-label="Add a new reminder"
               >

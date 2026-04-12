@@ -343,21 +343,23 @@ export function CaretakerRemindersPage(): ReactElement {
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className="font-headline"
+              className="font-headline uppercase"
               style={{
-                fontSize: 24,
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                padding: '10px 18px',
-                border: '1px solid var(--on-surface)',
-                background: 'transparent',
-                color: 'var(--on-surface)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.14em',
+                padding: '12px 22px',
+                border: '1px solid var(--accent)',
+                backgroundColor: 'var(--accent)',
+                color: 'var(--on-primary)',
                 cursor: 'pointer',
-                borderRadius: 2,
+                borderRadius: 8,
                 lineHeight: 1,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               }}
+              aria-label="Add a new reminder for this patient"
             >
-              Add reminder
+              + Add reminder
             </button>
           ) : null}
         </div>
