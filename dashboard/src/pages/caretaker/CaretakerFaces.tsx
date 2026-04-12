@@ -12,6 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { Header } from '../../components/Header';
 import { MemoryTree } from '../../components/MemoryTree';
+import { PendingFacesSection } from '../../components/PendingFacesSection';
 import { useAppAuth } from '../../auth/useAppAuth';
 import { useAuthedFetch } from '../../auth/useAuthedFetch';
 import { useMe } from '../../auth/useMe';
@@ -135,6 +136,8 @@ export function CaretakerFacesPage(): ReactElement {
             </button>
           ) : null}
         </div>
+
+        <PendingFacesSection patientId={patient_id} />
 
         {adding ? (
           <section

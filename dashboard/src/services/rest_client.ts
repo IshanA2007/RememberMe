@@ -35,6 +35,9 @@ import type {
   MemoryPatchRequest,
   MeResponse,
   PatientDirectoryResponse,
+  PendingFaceAcceptRequest,
+  PendingFaceAcceptResponse,
+  PendingFaceListResponse,
   QuickInfoResponse,
   RegisterRequest,
   ReminderCreateRequest,
@@ -147,6 +150,35 @@ export async function setFaceEmbedding(
     jsonInit(body, 'POST'),
   );
   return parseJson<FaceObject>(res);
+}
+
+// ---------- Pending Faces (API_SPEC §3b) ----------------------------------
+
+export async function listPendingFaces(
+  f: AuthedFetch,
+  patientId: string,
+): Promise<PendingFaceListResponse> {
+  const res = await f(`/api/patients/${encodeURIComponent(patientId)}/pending-faces`);
+  return parseJson<PendingFaceListResponse>(res);
+}
+
+export async function acceptPendingFace(
+  f: AuthedFetch,
+  pendingFaceId: string,
+  body: PendingFaceAcceptRequest,
+): Promise<PendingFaceAcceptResponse> {
+  const res = await f(
+    `/api/pending-faces/${encodeURIComponent(pendingFaceId)}/accept`,
+    jsonInit(body, 'POST'),
+  );
+  return parseJson<PendingFaceAcceptResponse>(res);
+}
+
+export async function dismissPendingFace(
+  f: AuthedFetch,
+  pendingFaceId: string,
+): Promise<void> {
+  await f(`/api/pending-faces/${encodeURIComponent(pendingFaceId)}`, { method: 'DELETE' });
 }
 
 // ---------- Memories (API_SPEC §4) ----------------------------------------

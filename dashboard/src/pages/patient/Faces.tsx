@@ -14,6 +14,7 @@ import type { ReactElement } from 'react';
 
 import { Header } from '../../components/Header';
 import { MemoryTree } from '../../components/MemoryTree';
+import { PendingFacesSection } from '../../components/PendingFacesSection';
 import { useAppAuth } from '../../auth/useAppAuth';
 import { useAuthedFetch } from '../../auth/useAuthedFetch';
 import { useMe } from '../../auth/useMe';
@@ -63,6 +64,8 @@ export function PatientFacesPage(): ReactElement {
         >
           My People
         </div>
+
+        {patientId ? <PendingFacesSection patientId={patientId} /> : null}
 
         {isLoading ? (
           <p

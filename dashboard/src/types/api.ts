@@ -124,6 +124,34 @@ export interface FaceEmbeddingRequest {
   embedding: number[]; // exactly 512 floats
 }
 
+// ---------- Pending Faces (API_SPEC §3b) ----------------------------------
+
+export type PendingFaceMime = 'image/jpeg' | 'image/png';
+
+export interface PendingFaceListItem {
+  pending_face_id: IdString;
+  patient_id: IdString;
+  thumbnail_b64: string;
+  thumbnail_mime: PendingFaceMime;
+  captured_at: IsoUtcString;
+  created_at: IsoUtcString;
+  updated_at: IsoUtcString;
+}
+
+export interface PendingFaceListResponse {
+  pending_faces: PendingFaceListItem[];
+}
+
+export interface PendingFaceAcceptRequest {
+  name: string;
+  title?: string | null;
+  description?: string | null;
+}
+
+export interface PendingFaceAcceptResponse {
+  face: FaceObject;
+}
+
 // ---------- Memories (API_SPEC §4) ----------------------------------------
 
 export interface MemoryObject {
